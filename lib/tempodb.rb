@@ -59,7 +59,7 @@ class TempoDBClient
         http = Net::HTTP.new(uri.host, uri.port)
 
         http.use_ssl = @secure
-        enable_cert_checking(http)
+        http.verify_mode = OpenSSL::SSL::VERIFY_PEER
         http.ca_file = TempoDB::TRUSTED_CERT_FILE
 
         request.basic_auth @key, @secret
@@ -134,10 +134,6 @@ class TempoDBClient
         else
             raise TempoDBClientError.new("Invalid response #{response}\n#{response.body}", response)
         end
-    end
-
-    def enable_cert_checking(http)
-        http.verify_mode = OpenSSL::SSL::VERIFY_PEER
     end
 end
 
