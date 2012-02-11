@@ -1,5 +1,6 @@
 require 'net/https'
 require 'json'
+require 'time'
 require 'uri'
 
 module TempoDB
@@ -7,7 +8,7 @@ module TempoDB
     API_PORT = 443
     API_VERSION = "v1"
 
-    TRUSTED_CERT_FILE = File.join(File.dirname(__FILE__), 'trusted-certs.crt')
+    TRUSTED_CERT_FILE = File.join(File.dirname(__FILE__), "trusted-certs.crt")
 end
 
 class Database
@@ -49,11 +50,39 @@ class TempoDBClient
     end
 
     def get_series()
-        json = do_get('/series/')
+        json = do_get("/series/")
         json.map {|series| Series.new(series["id"], series["key"])}
     end
 
+    def read_id(series_id, start, stop, interval="", function="")
+        series_type = "id"
+        series_val = series_id
+        read(series_type, series_val, start, stop, interval, function)
+    end
+
+    def read_key(series_key, start, stop, interval="", function="")
+        series_type = "key"
+        series_val = series_key
+        read(series_type, series_val, start, stop, interval, function)
+    end
+
     private
+
+    def read(series_type, series_val, start, stop, interval="", function="")
+        params = {
+            "start" => start.iso8601,
+            "end" => stop.iso8601
+        }
+
+        # add rollup interval and function if supplied
+        params["interval"] = interval if interval
+        params["function"] = function if function
+
+        url = "/series/#{series_type}/#{series_val}/data/"
+        json = do_get(url, params)
+
+        json.map {|dp| DataPoint.new(Time.parse(dp["t"]), dp["v"])}
+    end
 
     def do_http(uri, request) # :nodoc:
         http = Net::HTTP.new(uri.host, uri.port)
@@ -91,7 +120,7 @@ class TempoDBClient
                 elsif body.respond_to?(:stat) && body.stat.respond_to?(:size)
                     request["Content-Length"] = body.stat.size.to_s
                 else
-                    raise ArgumentError, "Don't know how to handle 'body' (responds to 'read' but not to 'length' or 'stat.size')."
+                    raise ArgumentError, 'Don"t know how to handle "body" (responds to "read" but not to "length" or "stat.size").'
                 end
                 request.body_stream = body
             else
