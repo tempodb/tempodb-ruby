@@ -21,7 +21,7 @@ class Database
     end
 
     def to_json(*a)
-        { "id" => key, "password" => secret }
+        { "id" => key, "password" => secret }.to_json(*a)
     end
     def self.from_json(m)
         new(m["id"], m["password"])
@@ -39,7 +39,7 @@ class Series
     end
 
     def to_json(*a)
-        { "id" => id, "key" => key, "attributes" => attributes, "tags" => tags }
+        { "id" => id, "key" => key, "attributes" => attributes, "tags" => tags }.to_json(*a)
     end
 
     def self.from_json(m)
@@ -56,7 +56,7 @@ class DataPoint
     end
 
     def to_json(*a)
-        { "t" => ts, "v" => value }
+        "{\"t\":\"#{ts.iso8601(3)}\",\"v\":#{value}}"
     end
 
     def self.from_json(m)
@@ -90,6 +90,18 @@ class TempoDBClient
         read(series_type, series_val, start, stop, interval, function)
     end
 
+    def write_id(series_id, data)
+        series_type = 'id'
+        series_val = series_id
+        write(series_type, series_val, data)
+    end
+
+    def write_key(series_key, data)
+        series_type = 'key'
+        series_val = series_key
+        write(series_type, series_val, data)
+    end
+
     private
 
     def read(series_type, series_val, start, stop, interval="", function="")
@@ -106,6 +118,11 @@ class TempoDBClient
         json = do_get(url, params)
 
         json.map {|dp| DataPoint.from_json(dp)}
+    end
+
+    def write(series_type, series_val, data)
+        url = "/series/#{series_type}/#{series_val}/data/"
+        do_post(url, nil, data)
     end
 
     def do_http(uri, request) # :nodoc:
@@ -134,22 +151,14 @@ class TempoDBClient
 
     def do_http_with_body(uri, request, body)
         if body != nil
-            if body.is_a?(Hash)
-                form_data = {}
-                body.each {|k,v| form_data[k.to_s] = v if !v.nil?}
-                request.set_form_data(form_data)
-            elsif body.respond_to?(:read)
-                if body.respond_to?(:length)
-                    request["Content-Length"] = body.length.to_s
-                elsif body.respond_to?(:stat) && body.stat.respond_to?(:size)
-                    request["Content-Length"] = body.stat.size.to_s
-                else
-                    raise ArgumentError, 'Don"t know how to handle "body" (responds to "read" but not to "length" or "stat.size").'
-                end
-                request.body_stream = body
-            else
+            if body.is_a?(String)
                 s = body.to_s
                 request["Content-Length"] = s.length
+                request.body = s
+            else
+                s = JSON.dump(body)
+                request["Content-Length"] = s.length
+                request["Content-Type"] = "application/json"
                 request.body = s
             end
         end
@@ -180,7 +189,11 @@ class TempoDBClient
     def parse_response(response)
         if response.kind_of?(Net::HTTPSuccess)
             begin
-                return JSON.parse(response.body)
+                if response.body == ""
+                    return {}
+                else
+                    return JSON.parse(response.body)
+                end
             rescue JSON::ParserError
                 return response.body
             end
