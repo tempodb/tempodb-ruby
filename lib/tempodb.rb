@@ -1,3 +1,4 @@
+require 'rubygems'
 require 'net/https'
 require 'json'
 require 'time'
@@ -18,6 +19,13 @@ class Database
         @key = key
         @secret = secret
     end
+
+    def to_json(*a)
+        { "id" => key, "password" => secret }
+    end
+    def self.from_json(m)
+        new(m["id"], m["password"])
+    end
 end
 
 class Series
@@ -29,6 +37,14 @@ class Series
         @attributes = attributes
         @tags = tags
     end
+
+    def to_json(*a)
+        { "id" => id, "key" => key, "attributes" => attributes, "tags" => tags }
+    end
+
+    def self.from_json(m)
+        new(m["id"], m["key"], m["attributes"], m["tags"])
+    end
 end
 
 class DataPoint
@@ -37,6 +53,14 @@ class DataPoint
     def initialize(ts, value)
         @ts = ts
         @value = value
+    end
+
+    def to_json(*a)
+        { "t" => ts, "v" => value }
+    end
+
+    def self.from_json(m)
+        new(Time.parse(m["t"]), m["v"])
     end
 end
 
@@ -51,7 +75,7 @@ class TempoDBClient
 
     def get_series()
         json = do_get("/series/")
-        json.map {|series| Series.new(series["id"], series["key"])}
+        json.map {|series| Series.from_json(series)}
     end
 
     def read_id(series_id, start, stop, interval="", function="")
@@ -81,7 +105,7 @@ class TempoDBClient
         url = "/series/#{series_type}/#{series_val}/data/"
         json = do_get(url, params)
 
-        json.map {|dp| DataPoint.new(Time.parse(dp["t"]), dp["v"])}
+        json.map {|dp| DataPoint.from_json(dp)}
     end
 
     def do_http(uri, request) # :nodoc:
