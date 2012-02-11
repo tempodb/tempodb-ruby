@@ -10,20 +10,6 @@ module TempoDB
     TRUSTED_CERT_FILE = File.join(File.dirname(__FILE__), 'trusted-certs.crt')
 end
 
-class TempoDBClientError < RuntimeError
-    attr_accessor :http_response, :error, :user_error
-    def initialize(error, http_response=nil, user_error=nil)
-        @error = error
-        @http_response = http_response
-        @user_error = user_error
-    end
-
-    def to_s
-        return "#{user_error} (#{error})" if user_error
-        "#{error}"
-    end
-end
-
 class Database
     attr_accessor :key, :secret
 
@@ -152,5 +138,19 @@ class TempoDBClient
 
     def enable_cert_checking(http)
         http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    end
+end
+
+class TempoDBClientError < RuntimeError
+    attr_accessor :http_response, :error, :user_error
+    def initialize(error, http_response=nil, user_error=nil)
+        @error = error
+        @http_response = http_response
+        @user_error = user_error
+    end
+
+    def to_s
+        return "#{user_error} (#{error})" if user_error
+        "#{error}"
     end
 end
