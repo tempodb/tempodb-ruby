@@ -102,6 +102,20 @@ class TempoDBClient
         write(series_type, series_val, data)
     end
 
+    def write_bulk(ts, data)
+        items = data.map do |item|
+            id = item["id"] ? "\"id\":\"#{item["id"]}\"," : ""
+            key = item["key"] ? "\"key\":\"#{item["key"]}\"," : ""
+            value = item["v"] ? "\"v\":#{item["v"]}" : ""
+            "{" + id + key + value + "}"
+        end
+        d = "[" + items.join(",") + "]"
+        json = "{\"t\":\"#{ts.iso8601(3)}\",\"data\":#{d}}"
+
+        url = "/data/"
+        do_post(url, nil, json)
+    end
+
     private
 
     def read(series_type, series_val, start, stop, interval="", function="")
