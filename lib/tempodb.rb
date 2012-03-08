@@ -131,6 +131,11 @@ module TempoDB
             json.map {|series| Series.from_json(series)}
         end
 
+        def update_series(series)
+            json = do_put("/series/id/#{series.id}/", nil, series.to_json())
+            Series.from_json(json)
+        end
+
         def read(start, stop, options={})
             defaults = {
                 :interval => "",
