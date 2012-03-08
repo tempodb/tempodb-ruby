@@ -66,6 +66,7 @@ module TempoDB
     end
 
     class DataSet
+        attr_accessor :series, :start, :stop, :data, :summary
 
         def initialize(series, start, stop, data=[], summary=None)
             @series = series
@@ -130,16 +131,43 @@ module TempoDB
             json.map {|series| Series.from_json(series)}
         end
 
-        def read_id(series_id, start, stop, interval="", function="")
-            series_type = "id"
-            series_val = series_id
-            read(series_type, series_val, start, stop, interval, function)
+        def read(start, stop, options={})
+            defaults = {
+                :interval => "",
+                :function => "",
+                :ids => [],
+                :keys => [],
+                :tags => [],
+                :attributes => {}
+            }
+            options = defaults.merge(options)
+
+            params = {}
+            params[:start] = start.iso8601(3)
+            params[:end] = stop.iso8601(3)
+            params[:interval] = options[:interval] if options[:interval]
+            params[:function] = options[:function] if options[:function]
+            params[:id] = options[:ids] if options[:ids]
+            params[:key] = options[:keys] if options[:keys]
+            params[:tag] = options[:tags] if options[:tags]
+            params[:attr] = options[:attributes] if options[:attributes]
+
+            url = "/data/"
+            json = do_get(url, params)
+
+            json.map {|ds| DataSet.from_json(ds)}
         end
 
-        def read_key(series_key, start, stop, interval="", function="")
+        def read_id(series_id, start, stop, options={})
+            series_type = "id"
+            series_val = series_id
+            _read(series_type, series_val, start, stop, options)
+        end
+
+        def read_key(series_key, start, stop, options={})
             series_type = "key"
             series_val = series_key
-            read(series_type, series_val, start, stop, interval, function)
+            _read(series_type, series_val, start, stop, options)
         end
 
         def write_id(series_id, data)
@@ -170,20 +198,22 @@ module TempoDB
 
         private
 
-        def read(series_type, series_val, start, stop, interval="", function="")
-            params = {
-                "start" => start.iso8601,
-                "end" => stop.iso8601
+        def _read(series_type, series_val, start, stop, options={})
+            defaults = {
+                :interval => "",
+                :function => "",
             }
+            options = defaults.merge(options)
 
-            # add rollup interval and function if supplied
-            params["interval"] = interval if interval
-            params["function"] = function if function
+            params = {}
+            params[:start] = start.iso8601(3)
+            params[:end] = stop.iso8601(3)
+            params[:interval] = options[:interval] if options[:interval]
+            params[:function] = options[:function] if options[:function]
 
             url = "/series/#{series_type}/#{series_val}/data/"
             json = do_get(url, params)
-
-            json.map {|dp| DataPoint.from_json(dp)}
+            DataSet.from_json(json)
         end
 
         def write(series_type, series_val, data)
