@@ -33,6 +33,7 @@ module TempoDB
         def initialize(id, key, name="", attributes={}, tags=[])
             @id = id
             @key = key
+            @name = name
             @attributes = attributes
             @tags = tags
         end
