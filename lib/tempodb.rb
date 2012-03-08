@@ -57,7 +57,7 @@ module TempoDB
         end
 
         def to_json(*a)
-            "{\"t\":\"#{ts.iso8601(3)}\",\"v\":#{value}}"
+            {"t" => ts.iso8601(3), "v" => value}
         end
 
         def self.from_json(m)
@@ -218,7 +218,8 @@ module TempoDB
 
         def write(series_type, series_val, data)
             url = "/series/#{series_type}/#{series_val}/data/"
-            do_post(url, nil, data)
+            body = data.collect {|dp| dp.to_json()}
+            do_post(url, nil, body)
         end
 
         def do_http(uri, request) # :nodoc:
