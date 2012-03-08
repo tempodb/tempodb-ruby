@@ -68,7 +68,7 @@ module TempoDB
     class DataSet
         attr_accessor :series, :start, :stop, :data, :summary
 
-        def initialize(series, start, stop, data=[], summary=None)
+        def initialize(series, start, stop, data=[], summary=nil)
             @series = series
             @start = start
             @stop = stop
