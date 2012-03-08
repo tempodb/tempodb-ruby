@@ -22,6 +22,7 @@ module TempoDB
         def to_json(*a)
             { "id" => key, "password" => secret }.to_json(*a)
         end
+
         def self.from_json(m)
             new(m["id"], m["password"])
         end
@@ -64,6 +65,43 @@ module TempoDB
         end
     end
 
+    class DataSet
+
+        def initialize(series, start, stop, data=[], summary=None)
+            @series = series
+            @start = start
+            @stop = stop
+            @data = data
+            @summary = summary
+        end
+
+        def self.from_json(m)
+            series = Series.from_json(m["series"])
+            start = Time.parse(m["start"])
+            stop = Time.parse(m["end"])
+            data = m["data"].map {|dp| DataPoint.from_json(dp)}
+            summary = Summary.from_json(m["summary"])
+            new(series, start, stop, data, summary)
+        end
+
+    end
+
+    class Summary
+
+        def initialize()
+        end
+
+        def self.from_json(m)
+            summary = Summary.new()
+            m.each do |k, v|
+                summary.instance_variable_set("@#{k}", v)  ## create and initialize an instance variable for this key/value pair
+                summary.class.send(:define_method, k, proc{self.instance_variable_get("@#{k}")})  ## create the getter that returns the instance variable
+                summary.class.send(:define_method, "#{k}=", proc{|v| self.instance_variable_set("@#{k}", v)})  ## create the setter that sets the instance variable
+            end
+            summary
+        end
+    end
+
     class Client
         def initialize(key, secret, host=TempoDB::API_HOST, port=TempoDB::API_PORT, secure=true)
             @key = key
@@ -73,8 +111,22 @@ module TempoDB
             @secure = secure
         end
 
-        def get_series()
-            json = do_get("/series/")
+        def get_series(options={})
+            defaults = {
+                :ids => [],
+                :keys => [],
+                :tags => [],
+                :attributes => {}
+            }
+            options = defaults.merge(options)
+
+            params = {}
+            if options[:ids] then params[:id] = options[:ids] end
+            if options[:keys] then params[:key] = options[:keys] end
+            if options[:tags] then params[:tag] = options[:tags] end
+            if options[:attributes] then params[:attr] = options[:attributes] end
+
+            json = do_get("/series/", params)
             json.map {|series| Series.from_json(series)}
         end
 
@@ -195,9 +247,23 @@ module TempoDB
             target = URI::Generic.new(protocol, nil, @host, @port, nil, versioned_url, nil, nil, nil)
 
             if params
-                target.query = params.collect {|k,v| URI.escape(k) + "=" + URI.escape(v) }.join("&")
+                target.query = urlencode(params)
             end
             URI.parse(target.to_s)
+        end
+
+        def urlencode(params)
+            p = []
+            params.each do |key, value|
+                if value.is_a? Array
+                    value.each {|v| p.push(URI.escape(key.to_s) + "=" + URI.escape(v))}
+                elsif value.is_a? Hash
+                    value.each {|k, v| p.push("#{URI.escape(key.to_s)}[#{URI.escape(k.to_s)}]=#{URI.escape(v)}")}
+                else
+                    p.push(URI.escape(key.to_s) + "=" + URI.escape(value))
+                end
+            end
+            p.join("&")
         end
 
         def parse_response(response)
