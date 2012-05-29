@@ -112,6 +112,16 @@ module TempoDB
             @secure = secure
         end
 
+        def create_series(key=nil)
+            params = {}
+            if key != nil
+                params[:key] = key
+            end
+
+            json = do_post("/series/", nil, params)
+            Series.from_json(json)
+        end
+
         def get_series(options={})
             defaults = {
                 :ids => [],
