@@ -198,15 +198,10 @@ module TempoDB
         end
 
         def write_bulk(ts, data)
-            items = data.map do |item|
-                id = item["id"] ? "\"id\":\"#{item["id"]}\"," : ""
-                key = item["key"] ? "\"key\":\"#{item["key"]}\"," : ""
-                value = item["v"] ? "\"v\":#{item["v"]}" : ""
-                "{" + id + key + value + "}"
-            end
-            d = "[" + items.join(",") + "]"
-            json = "{\"t\":\"#{ts.iso8601(3)}\",\"data\":#{d}}"
-
+            json = JSON.generate({
+                :t => ts.iso8601(3),
+                :data => data
+            })
             url = "/data/"
             do_post(url, nil, json)
         end
