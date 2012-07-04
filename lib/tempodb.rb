@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'net/https'
 require 'json'
+require 'tempodb/version'
 require 'time'
 require 'uri'
 
@@ -267,6 +268,7 @@ module TempoDB
             http.ca_file = TempoDB::TRUSTED_CERT_FILE
 
             request.basic_auth @key, @secret
+            request['User-Agent'] = "tempodb-ruby/#{TempoDB::VERSION}"
 
             begin
                 response = http.request(request)
