@@ -337,3 +337,92 @@ The following example writes datapoints to four separate series at the same time
 
     client.write_bulk(ts, data)
 
+## increment_id(series_id, data)
+Increments the value of the specified series at the given timestamp. The value of the datapoint is the amount to increment. This is similar to a write. However the value is incremented by the datapoint value
+instead of overwritten. Values are incremented atomically, so this is useful for counting events. The series id and an array of DataPoints are required.
+
+### Parameters
+* series_id - id for the series to increment (string)
+* data - the data to write (Array of DataPoints)
+
+### Returns
+Nothing
+
+### Example
+
+The following increments three datapoints of the series with id "38268c3b231f1266a392931e15e99231".
+
+    require 'tempodb'
+
+    client = TempoDB::Client.new("api-key", "api-secret")
+
+    data = [
+        TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 0, 0), 1),
+        TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 1, 0), 2),
+        TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 2, 0), 1)
+    ]
+
+    client.increment_id("38268c3b231f1266a392931e15e99231", data)
+
+## increment_key(series_key, data)
+Increments the value of the specified series at the given timestamp. The value of the datapoint is the amount to increment. This is similar to a write. However the value is incremented by the datapoint value
+instead of overwritten. Values are incremented atomically, so this is useful for counting events. The series key and an array of DataPoints are required.
+
+### Parameters
+* series_key - key for the series to increment (string)
+* data - the data to write (Array of DataPoints)
+
+### Returns
+Nothing
+
+### Example
+
+The following example increments three datapoints of the series with key "my-custom-key".
+
+    require 'tempodb'
+
+    client = TempoDB::Client.new("api-key", "api-secret")
+
+    data = [
+        TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 0, 0), 1),
+        TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 1, 0), 2),
+        TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 2, 0), 4)
+    ]
+
+    client.increment_key("my-custom-key", data)
+
+## increment_bulk(ts, data)
+Increments values of multiple series for a particular timestamp. This function takes a timestamp and a parameter called data, which is an
+array of hashes containing the series id or key and the value. For example:
+
+    data = [
+        { :id => '01868c1a2aaf416ea6cd8edd65e7a4b8', :v => 4.164 },
+        { :id =>'38268c3b231f1266a392931e15e99231', :v => 73.13 },
+        { :key => 'your-custom-key', :v => 55.423 },
+        { :key => 'foo', :v => 324.991 }
+    ]
+
+### Parameters
+* ts - a timestamp of the data points (Time)
+* data - an array of dictionaries containing an id or key and the value
+
+### Returns
+Nothing
+
+### Example
+
+The following example increments datapoints of four separate series at the same timestamp.
+
+    require 'tempodb'
+
+    client = TempoDB::Client("api-key", "api-secret")
+
+    ts = Time.utc(2012, 1, 8, 1, 21)
+    data = [
+        { :id => '01868c1a2aaf416ea6cd8edd65e7a4b8', :v => 4 },
+        { :id =>'38268c3b231f1266a392931e15e99231', :v => 2 },
+        { :key => 'your-custom-key', :v => 1 },
+        { :key => 'foo', :v => 1 }
+    ]
+
+    client.increment_bulk(ts, data)
