@@ -366,7 +366,8 @@ The following increments three datapoints of the series with id "38268c3b231f126
 
 ## increment_key(series_key, data)
 Increments the value of the specified series at the given timestamp. The value of the datapoint is the amount to increment. This is similar to a write. However the value is incremented by the datapoint value
-instead of overwritten. Values are incremented atomically, so this is useful for counting events. The series key and an array of DataPoints are required.
+instead of overwritten. Values are incremented atomically, so this is useful for counting events. The series key and an array of DataPoints are required. Note: a series will be created
+if the provided key does not exist.
 
 ### Parameters
 * series_key - key for the series to increment (string)
@@ -396,10 +397,10 @@ Increments values of multiple series for a particular timestamp. This function t
 array of hashes containing the series id or key and the value. For example:
 
     data = [
-        { :id => '01868c1a2aaf416ea6cd8edd65e7a4b8', :v => 4.164 },
-        { :id =>'38268c3b231f1266a392931e15e99231', :v => 73.13 },
-        { :key => 'your-custom-key', :v => 55.423 },
-        { :key => 'foo', :v => 324.991 }
+        { :id => '01868c1a2aaf416ea6cd8edd65e7a4b8', :v => 4 },
+        { :id =>'38268c3b231f1266a392931e15e99231', :v => 2 },
+        { :key => 'your-custom-key', :v => 1 },
+        { :key => 'foo', :v => 1 }
     ]
 
 ### Parameters
