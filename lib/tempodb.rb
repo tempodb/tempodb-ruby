@@ -206,6 +206,27 @@ module TempoDB
             do_post(url, nil, json)
         end
 
+        def increment_id(series_id, data)
+            series_type = 'id'
+            series_val = series_id
+            increment(series_type, series_val, data)
+        end
+
+        def increment_key(series_key, data)
+            series_type = 'key'
+            series_val = series_key
+            increment(series_type, series_val, data)
+        end
+
+        def increment_bulk(ts, data)
+            json = JSON.generate({
+                :t => ts.iso8601(3),
+                :data => data
+            })
+            url = "/increment/"
+            do_post(url, nil, json)
+        end
+
         private
 
         def _read(series_type, series_val, start, stop, options={})
@@ -228,6 +249,12 @@ module TempoDB
 
         def write(series_type, series_val, data)
             url = "/series/#{series_type}/#{series_val}/data/"
+            body = data.collect {|dp| dp.to_json()}
+            do_post(url, nil, body)
+        end
+
+        def increment(series_type, series_val, data)
+            url = "/series/#{series_type}/#{series_val}/increment/"
             body = data.collect {|dp| dp.to_json()}
             do_post(url, nil, body)
         end
