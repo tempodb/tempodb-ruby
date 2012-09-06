@@ -136,6 +136,7 @@ Gets an array of DataSets for the specified start/stop times.
 * stop - end time for the query (Time)
 * interval - the rollup interval (string)
 * function - the rollup folding function (string)
+* tz - the time zone of the output datapoints
 * ids - an array of ids to include (Array of strings)
 * keys - an array of keys to include (Array of strings)
 * tags - an array of tags to filter on. These tags are and'd together (Array of strings)
@@ -198,6 +199,7 @@ read (above).
 * stop - end time for the query (Time)
 * interval - the rollup interval (string)
 * function - the rollup folding function (string)
+* tz - the time zone of the output datapoints
 
 ### Returns
 
@@ -228,6 +230,7 @@ read (above).
 * stop - end time for the query (Time)
 * interval - the rollup interval (string)
 * function - the rollup folding function (string)
+* tz - the time zone of the output datapoints
 
 ### Returns
 
