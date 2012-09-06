@@ -150,6 +150,7 @@ module TempoDB
       defaults = {
         :interval => "",
         :function => "",
+        :tz => "",
         :ids => [],
         :keys => [],
         :tags => [],
@@ -162,6 +163,7 @@ module TempoDB
       params[:end] = stop.iso8601(3)
       params[:interval] = options[:interval] if options[:interval]
       params[:function] = options[:function] if options[:function]
+      params[:tz] = options[:tz] if options[:tz]
       params[:id] = options[:ids] if options[:ids]
       params[:key] = options[:keys] if options[:keys]
       params[:tag] = options[:tags] if options[:tags]
@@ -233,6 +235,7 @@ module TempoDB
       defaults = {
         :interval => "",
         :function => "",
+        :tz => ""
       }
       options = defaults.merge(options)
 
@@ -241,6 +244,7 @@ module TempoDB
       params[:end] = stop.iso8601(3)
       params[:interval] = options[:interval] if options[:interval]
       params[:function] = options[:function] if options[:function]
+      params[:tz] = options[:tz] if options [:tz]
 
       url = "/series/#{series_type}/#{series_val}/data/"
       json = do_get(url, params)
@@ -317,6 +321,7 @@ module TempoDB
 
       if params
         target.query = urlencode(params)
+        puts target.query
       end
       URI.parse(target.to_s)
     end
