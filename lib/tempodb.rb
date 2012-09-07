@@ -321,7 +321,6 @@ module TempoDB
 
       if params
         target.query = urlencode(params)
-        puts target.query
       end
       URI.parse(target.to_s)
     end
