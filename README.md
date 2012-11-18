@@ -430,3 +430,59 @@ The following example increments datapoints of four separate series at the same 
     ]
 
     client.increment_bulk(ts, data)
+
+## delete_id(series_id, start, stop, *options={}*)
+
+Deletes a range of datapoints from a series specified by id. The id, start, and stop times are required. Delete a single datapoint
+by setting the start and stop times to the same time.
+
+### Parameters
+* series_id - id for the series to read from (string)
+* start - start time for the query (Time)
+* stop - end time for the query (Time)
+* options - (unused for now)
+
+### Returns
+
+Nothing
+
+### Example
+
+The following example deletes data for the series with id "38268c3b231f1266a392931e15e99231" from 2012-01-01 to 2012-02-01.
+
+    require 'tempodb'
+
+    client = TempoDB::Client.new("api-key", "api-secret")
+
+    start = Time.utc(2012, 1, 1)
+    stop = Time.utc(2012, 1, 2)
+
+    client.delete_id("38268c3b231f1266a392931e15e99231", start, stop)
+
+## delete_key(series_key, start, stop, *options={}*)
+
+Deletes a range of datapoints from a series referenced by series key. The key, start, and stop times are required. Delete a single datapoint
+by setting the start and stop times to the same time.
+
+### Parameters
+* series_key - key for the series to read from (string)
+* start - start time for the query (Time)
+* stop - end time for the query (Time)
+* options - (unused for now)
+
+### Returns
+
+Nothing
+
+### Example
+
+The following example deletes data for the series with key "my-custom-key" from 2012-01-01 to 2012-02-01.
+
+    require 'tempodb'
+
+    client = TempoDB::Client.new("api-key", "api-secret")
+
+    start = Time.utc(2012, 1, 1)
+    stop = Time.utc(2012, 1, 2)
+
+    client.delete_key("my-custom-key", start, stop)
