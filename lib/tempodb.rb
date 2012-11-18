@@ -187,6 +187,18 @@ module TempoDB
       _read(series_type, series_val, start, stop, options)
     end
 
+    def delete_id(series_id, start, stop, options={})
+      series_type = "id"
+      series_val = series_id
+      _delete(series_type, series_val, start, stop, options)
+    end
+
+    def delete_key(series_key, start, stop, options={})
+      series_type = "key"
+      series_val = series_key
+      _delete(series_type, series_val, start, stop, options)
+    end
+
     def write_id(series_id, data)
       series_type = 'id'
       series_val = series_id
@@ -251,6 +263,18 @@ module TempoDB
       DataSet.from_json(json)
     end
 
+    def _delete(series_type, series_val, start, stop, options={})
+      defaults = {}
+      options = defaults.merge(options)
+
+      params = {}
+      params[:start] = start.iso8601(3)
+      params[:end] = stop.iso8601(3)
+
+      url = "/series/#{series_type}/#{series_val}/data/"
+      do_delete(url, params)
+    end
+
     def write(series_type, series_val, data)
       url = "/series/#{series_type}/#{series_val}/data/"
       body = data.collect {|dp| dp.to_json()}
@@ -286,6 +310,11 @@ module TempoDB
     def do_get(url, params=nil, headers=nil)  # :nodoc:
       uri = build_uri(url, params)
       do_http(uri, Net::HTTP::Get.new(uri.request_uri, headers))
+    end
+
+    def do_delete(url, params=nil, headers=nil)
+      uri = build_uri(url, params)
+      do_http(uri, Net::HTTP::Delete.new(uri.request_uri, headers))
     end
 
     def do_http_with_body(uri, request, body)
