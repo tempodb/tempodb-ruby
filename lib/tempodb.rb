@@ -288,18 +288,23 @@ module TempoDB
     end
 
     def do_http(uri, request) # :nodoc:
-      http = Net::HTTP.new(uri.host, uri.port)
-
-      http.use_ssl = @secure
-      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-      http.ca_file = TempoDB::TRUSTED_CERT_FILE
+      if @http.nil?
+        @http = Net::HTTP.start(uri.host, uri.port)
+        @http.use_ssl = @secure
+        @http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+        @http.ca_file = TempoDB::TRUSTED_CERT_FILE
+      end
 
       request.basic_auth @key, @secret
       request['User-Agent'] = "tempodb-ruby/#{TempoDB::VERSION}"
       request['Accept-Encoding'] = "gzip"
 
       begin
-        response = http.request(request)
+        response = @http.request(request)
+      rescue EOFError
+        # Ruby bug workaround. Retry once if the persistent (keepalive'd) connection timed out
+        # http://bugs.ruby-lang.org/issues/5790
+        response = @http.request(request)
       rescue OpenSSL::SSL::SSLError => e
         raise TempoDBClientError.new("SSL error connecting to TempoDB.  " +
                                      "There may be a problem with the set of certificates in \"#{TempoDB::TRUSTED_CERT_FILE}\".  " + e)
