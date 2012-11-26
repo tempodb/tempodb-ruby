@@ -296,6 +296,7 @@ module TempoDB
 
       request.basic_auth @key, @secret
       request['User-Agent'] = "tempodb-ruby/#{TempoDB::VERSION}"
+      request['Accept-Encoding'] = "gzip"
 
       begin
         response = http.request(request)
@@ -370,17 +371,29 @@ module TempoDB
 
     def parse_response(response)
       if response.kind_of?(Net::HTTPSuccess)
+        body = _response_body(response)
+
         begin
-          if response.body == ""
+          if body == ""
             return {}
           else
-            return JSON.parse(response.body)
+            return JSON.parse(body)
           end
         rescue JSON::ParserError
-          return response.body
+          return body
         end
       else
-        raise TempoDBClientError.new("Invalid response #{response}\n#{response.body}", response)
+        raise TempoDBClientError.new("Invalid response #{response}\n#{body}", response)
+      end
+    end
+
+    def _response_body(response)
+      if response["Content-Encoding"] == "gzip"
+        string_io = StringIO.new(response.body)
+        gz = Zlib::GzipReader.new(string_io)
+        gz.read
+      else
+        response.body
       end
     end
   end
