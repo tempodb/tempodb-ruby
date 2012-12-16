@@ -289,8 +289,7 @@ module TempoDB
 
     def do_http(uri, request) # :nodoc:
       if @http.nil?
-        @http = Net::HTTP.start(uri.host, uri.port)
-        @http.use_ssl = @secure
+        @http = Net::HTTP.start(uri.host, uri.port, :use_ssl => @secure)
         @http.verify_mode = OpenSSL::SSL::VERIFY_PEER
         @http.ca_file = TempoDB::TRUSTED_CERT_FILE
       end
