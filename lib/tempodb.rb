@@ -291,6 +291,7 @@ module TempoDB
     def do_http(uri, request) # :nodoc:
       if @http_client.nil?
         @http_client = HTTPClient.new
+        @http_client.transparent_gzip_decompression = true
         if @secure
           @http_client.ssl_config.clear_cert_store
           @http_client.ssl_config.set_trust_ca(TempoDB::TRUSTED_CERT_FILE)
