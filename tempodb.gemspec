@@ -15,6 +15,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   s.add_runtime_dependency "json"
+  s.add_runtime_dependency "httpclient"
   s.add_development_dependency "rspec", "~> 2.12.0"
   s.add_development_dependency "webmock", "~> 1.8.10"
 end

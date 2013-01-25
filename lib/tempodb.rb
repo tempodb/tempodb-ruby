@@ -1,4 +1,5 @@
 require 'rubygems'
+require 'httpclient'
 require 'net/https'
 require 'json'
 require 'tempodb/version'
@@ -288,26 +289,26 @@ module TempoDB
     end
 
     def do_http(uri, request) # :nodoc:
-      if @http.nil?
-        @http = Net::HTTP.new(uri.host, uri.port)
-        @http.use_ssl = @secure
+      if @http_client.nil?
+        @http_client = HTTPClient.new
         if @secure
-          @http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-          @http.ca_file = TempoDB::TRUSTED_CERT_FILE
+          @http_client.ssl_config.clear_cert_store
+          @http_client.ssl_config.set_trust_ca(TempoDB::TRUSTED_CERT_FILE)
         end
-        @http.start
       end
 
       request.basic_auth @key, @secret
       request['User-Agent'] = "tempodb-ruby/#{TempoDB::VERSION}"
       request['Accept-Encoding'] = "gzip"
 
+      method = request.method.downcase.intern
+      http_client_attrs = {
+        :header => Hash[request.to_hash.map {|k,v| [k, v.first] if v.is_a?(Array) && v.size == 1}],
+        :body => request.body
+      }
+
       begin
-        response = @http.request(request)
-      rescue EOFError
-        # Ruby bug workaround. Retry once if the persistent (keepalive'd) connection timed out
-        # http://bugs.ruby-lang.org/issues/5790
-        response = @http.request(request)
+        response = @http_client.request(method, uri, http_client_attrs)
       rescue OpenSSL::SSL::SSLError => e
         raise TempoDBClientError.new("SSL error connecting to TempoDB.  " +
                                      "There may be a problem with the set of certificates in \"#{TempoDB::TRUSTED_CERT_FILE}\".  " + e)
@@ -378,8 +379,8 @@ module TempoDB
     end
 
     def parse_response(response)
-      if response.kind_of?(Net::HTTPSuccess)
-        body = _response_body(response)
+      if response.ok?
+        body = response.body
 
         begin
           if body == ""
@@ -391,17 +392,7 @@ module TempoDB
           return body
         end
       else
-        raise TempoDBClientError.new("Invalid response #{response}\n#{body}", response)
-      end
-    end
-
-    def _response_body(response)
-      if response["Content-Encoding"] == "gzip"
-        string_io = StringIO.new(response.body)
-        gz = Zlib::GzipReader.new(string_io)
-        gz.read
-      else
-        response.body
+        raise TempoDBClientError.new("Error: #{response.status_code} #{response.reason}\n#{response.body}")
       end
     end
   end
