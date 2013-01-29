@@ -18,3 +18,7 @@ RSpec.configure do |config|
   #     --seed 1234
   config.order = 'random'
 end
+
+def response_fixture(file)
+  File.read(File.join(File.dirname(__FILE__), "fixtures", file))
+end
