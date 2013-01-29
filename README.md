@@ -6,6 +6,8 @@ The TempoDB Ruby API Client makes calls to the [TempoDB API](http://tempo-db.com
 gem install tempodb
 ``
 
+[![Build Status](https://travis-ci.org/tempodb/tempodb-ruby.png?branch=master)](https://travis-ci.org/tempodb/tempodb-ruby)
+
 # Classes
 
 ## Client(key, secret, *host="api.tempo-db.com"*, *port=443*, *secure=true*)
