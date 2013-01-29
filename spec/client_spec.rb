@@ -28,4 +28,17 @@ describe TempoDB::Client do
       end
     end
   end
+
+  describe "read_key" do
+    it "has an array of DataPoints" do
+      start = Time.parse("2012-01-01")
+      stop = Time.parse("2012-01-02")
+      stub_request(:get, "https://api.tempo-db.com/v1/series/key/key1/data/?end=2012-01-02T00:00:00.000-06:00&function=&interval=&start=2012-01-01T00:00:00.000-06:00&tz=").
+        to_return(:status => 200, :body => response_fixture('read_key.json'), :headers => {})
+      client = TempoDB::Client.new("key", "secret")
+      set = client.read_key("key1", start, stop)
+      set.data.all? { |d| d.is_a?(TempoDB::DataPoint) }.should be_true
+      set.data.size.should == 1440
+    end
+  end
 end
