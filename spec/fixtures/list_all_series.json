@@ -1,0 +1,51 @@
+[
+    {
+        "attributes": {}, 
+        "id": "0aeef415ce734b02af5325f6ad977e26", 
+        "key": "custom-series-key1", 
+        "name": "", 
+        "tags": []
+    }, 
+    {
+        "attributes": {}, 
+        "id": "4b55dbe65b174d4c81e30feb7000bc71", 
+        "key": "custom-series-key2", 
+        "name": "", 
+        "tags": []
+    }, 
+    {
+        "attributes": {}, 
+        "id": "fdb8b110144d4d2f8057693803f79806", 
+        "key": "custom-series-key3", 
+        "name": "", 
+        "tags": []
+    }, 
+    {
+        "attributes": {}, 
+        "id": "04340f76ef1b416e90b226d1059acd43", 
+        "key": "custom-series-key4", 
+        "name": "", 
+        "tags": []
+    }, 
+    {
+        "attributes": {}, 
+        "id": "0dd0a688521242d1935d6ff7e4ebf74e", 
+        "key": "demo-series", 
+        "name": "", 
+        "tags": []
+    }, 
+    {
+        "attributes": {}, 
+        "id": "3c9b4f3a19114a7eb670ff7c4917f315", 
+        "key": "getting_started", 
+        "name": "", 
+        "tags": []
+    }, 
+    {
+        "attributes": {}, 
+        "id": "506f2323660f4e41b5778b0ef1eb0d44", 
+        "key": "your-custom-key", 
+        "name": "", 
+        "tags": []
+    }
+]
