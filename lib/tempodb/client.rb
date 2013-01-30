@@ -38,7 +38,7 @@ module TempoDB
     end
 
     def update_series(series)
-      json = do_put("/series/id/#{series.id}/", nil, series.to_json())
+      json = do_put("/series/id/#{series.id}/", nil, series.to_json)
       Series.from_json(json)
     end
 
