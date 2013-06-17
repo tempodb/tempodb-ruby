@@ -75,6 +75,17 @@ describe TempoDB::Client do
       set.data.size.should == 1440
     end
 
+    it "handles special characters" do
+      start = Time.parse("2012-01-01 00:00 UTC")
+      stop = Time.parse("2012-01-02 00:00 UTC")
+      stub_request(:get, "https://api.tempo-db.com/v1/series/key/a%20b%5Ed&e%3Ff/data/?end=2012-01-02T00:00:00.000Z&function=&interval=&start=2012-01-01T00:00:00.000Z&tz=").
+        to_return(:status => 200, :body => response_fixture('read_id_and_key.json'), :headers => {})
+      client = TempoDB::Client.new("key", "secret")
+      set = client.read_key("a b^d&e?f", start, stop)
+      set.data.all? { |d| d.is_a?(TempoDB::DataPoint) }.should be_true
+      set.data.size.should == 1440
+    end
+
     context "with a series that does not exist" do
       it "throws a TempoDBClientError exception" do
         start = Time.parse("2012-01-01 00:00 UTC")
@@ -125,6 +136,18 @@ describe TempoDB::Client do
              ]
       client = TempoDB::Client.new("key", "secret")
       client.write_key("key3", points).should == {}
+    end
+
+    it "handles special characters" do
+      stub_request(:post, "https://api.tempo-db.com/v1/series/key/a%20b%5Ed&e%3Ff/data/").
+        to_return(:status => 200, :body => "", :headers => {})
+      points = [
+              TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 0, 0), 12.34),
+              TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 1, 0), 1.874),
+              TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 2, 0), 21.52)
+             ]
+      client = TempoDB::Client.new("key", "secret")
+      client.write_key("a b^d&e?f", points).should == {}
     end
   end
 
