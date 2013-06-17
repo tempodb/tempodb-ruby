@@ -251,8 +251,9 @@ module TempoDB
 
     def build_uri(url, params=nil)
       versioned_url = "/#{TempoDB::API_VERSION}#{url}"
+      encoded_url = URI.escape(versioned_url, Regexp.new("[^#{URI::REGEXP::PATTERN::UNRESERVED}/]", false, 'N'))
       protocol = @secure ? "https" : "http"
-      target = URI::Generic.new(protocol, nil, @host, @port, nil, versioned_url, nil, nil, nil)
+      target = URI::Generic.new(protocol, nil, @host, @port, nil, encoded_url, nil, nil, nil)
 
       if params
         target.query = urlencode(params)
