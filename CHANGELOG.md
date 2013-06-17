@@ -1,3 +1,7 @@
+## 0.5.5
+
+* Bugfix - URI encode our paths (not just params)
+
 ## 0.5.4
 
 * Switch to HTTPClient, for thread-safe persistent HTTP connections
