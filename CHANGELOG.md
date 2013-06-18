@@ -1,3 +1,7 @@
+## 0.5.6
+
+* Bugfix - Support forward slashes in series keys
+
 ## 0.5.5
 
 * Bugfix - URI encode our paths (not just params)
