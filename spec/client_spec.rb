@@ -78,10 +78,10 @@ describe TempoDB::Client do
     it "handles special characters" do
       start = Time.parse("2012-01-01 00:00 UTC")
       stop = Time.parse("2012-01-02 00:00 UTC")
-      stub_request(:get, "https://api.tempo-db.com/v1/series/key/a%20b%5Ed&e%3Ff/data/?end=2012-01-02T00:00:00.000Z&function=&interval=&start=2012-01-01T00:00:00.000Z&tz=").
+      stub_request(:get, "https://api.tempo-db.com/v1/series/key/a%20b%5Ed&e%3Ff%2Fg/data/?end=2012-01-02T00:00:00.000Z&function=&interval=&start=2012-01-01T00:00:00.000Z&tz=").
         to_return(:status => 200, :body => response_fixture('read_id_and_key.json'), :headers => {})
       client = TempoDB::Client.new("key", "secret")
-      set = client.read_key("a b^d&e?f", start, stop)
+      set = client.read_key("a b^d&e?f/g", start, stop)
       set.data.all? { |d| d.is_a?(TempoDB::DataPoint) }.should be_true
       set.data.size.should == 1440
     end

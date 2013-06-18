@@ -14,7 +14,7 @@ module TempoDB
         params[:key] = key
       end
 
-      json = do_post("/series/", nil, params)
+      json = do_post(["series"], nil, params)
       Series.from_json(json)
     end
 
@@ -33,12 +33,12 @@ module TempoDB
       if options[:tags] then params[:tag] = options[:tags] end
       if options[:attributes] then params[:attr] = options[:attributes] end
 
-      json = do_get("/series/", params)
+      json = do_get(["series"], params)
       json.map {|series| Series.from_json(series)}
     end
 
     def update_series(series)
-      json = do_put("/series/id/#{series.id}/", nil, series.to_json)
+      json = do_put(["series", "id", series.id], nil, series.to_json)
       Series.from_json(json)
     end
 
@@ -65,7 +65,7 @@ module TempoDB
       params[:tag] = options[:tags] if options[:tags]
       params[:attr] = options[:attributes] if options[:attributes]
 
-      url = "/data/"
+      url = ["data"]
       json = do_get(url, params)
 
       json.map {|ds| DataSet.from_json(ds)}
@@ -112,7 +112,7 @@ module TempoDB
         :t => ts.iso8601(3),
         :data => data
       })
-      url = "/data/"
+      url = ["data"]
       do_post(url, nil, json)
     end
 
@@ -133,7 +133,7 @@ module TempoDB
         :t => ts.iso8601(3),
         :data => data
       })
-      url = "/increment/"
+      url = ["increment"]
       do_post(url, nil, json)
     end
 
@@ -154,7 +154,7 @@ module TempoDB
       params[:function] = options[:function] if options[:function]
       params[:tz] = options[:tz] if options [:tz]
 
-      url = "/series/#{series_type}/#{series_val}/data/"
+      url = ["series", series_type, series_val, "data"]
       json = do_get(url, params)
       DataSet.from_json(json)
     end
@@ -167,18 +167,18 @@ module TempoDB
       params[:start] = start.iso8601(3)
       params[:end] = stop.iso8601(3)
 
-      url = "/series/#{series_type}/#{series_val}/data/"
+      url = ["series", series_type, series_val, "data"]
       do_delete(url, params)
     end
 
     def write(series_type, series_val, data)
-      url = "/series/#{series_type}/#{series_val}/data/"
+      url = ["series", series_type, series_val, "data"]
       body = data.collect {|dp| dp.to_json()}
       do_post(url, nil, body)
     end
 
     def increment(series_type, series_val, data)
-      url = "/series/#{series_type}/#{series_val}/increment/"
+      url = ["series", series_type, series_val, "increment"]
       body = data.collect {|dp| dp.to_json()}
       do_post(url, nil, body)
     end
@@ -239,21 +239,23 @@ module TempoDB
       do_http(uri, request)
     end
 
-    def do_post(url, headers=nil, body=nil)  # :nodoc:
-      uri = build_uri(url)
+    def do_post(url_parts, headers=nil, body=nil)  # :nodoc:
+      uri = build_uri(url_parts)
       do_http_with_body(uri, Net::HTTP::Post.new(uri.request_uri, headers), body)
     end
 
-    def do_put(url, headers=nil, body=nil)  # :nodoc:
-      uri = build_uri(url)
+    def do_put(url_parts, headers=nil, body=nil)  # :nodoc:
+      uri = build_uri(url_parts)
       do_http_with_body(uri, Net::HTTP::Put.new(uri.request_uri, headers), body)
     end
 
-    def build_uri(url, params=nil)
-      versioned_url = "/#{TempoDB::API_VERSION}#{url}"
-      encoded_url = URI.escape(versioned_url, Regexp.new("[^#{URI::REGEXP::PATTERN::UNRESERVED}/]", false, 'N'))
+    def build_uri(url_parts, params=nil)
+      versioned_url_parts = [TempoDB::API_VERSION] + url_parts
+      url = versioned_url_parts.map do |part|
+        URI.escape(part, Regexp.new("[^#{URI::REGEXP::PATTERN::UNRESERVED}]", false, 'N'))
+      end.join("/")
       protocol = @secure ? "https" : "http"
-      target = URI::Generic.new(protocol, nil, @host, @port, nil, encoded_url, nil, nil, nil)
+      target = URI::Generic.new(protocol, nil, @host, @port, nil, "/#{url}/", nil, nil, nil)
 
       if params
         target.query = urlencode(params)
