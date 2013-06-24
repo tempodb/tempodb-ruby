@@ -252,7 +252,7 @@ module TempoDB
     def build_uri(url_parts, params=nil)
       versioned_url_parts = [TempoDB::API_VERSION] + url_parts
       url = versioned_url_parts.map do |part|
-        URI.escape(part, Regexp.new("[^#{URI::REGEXP::PATTERN::UNRESERVED}]", false, 'N'))
+        URI.escape(part, Regexp.new("[^#{URI::REGEXP::PATTERN::UNRESERVED}]", false))
       end.join("/")
       protocol = @secure ? "https" : "http"
       target = URI::Generic.new(protocol, nil, @host, @port, nil, "/#{url}/", nil, nil, nil)
