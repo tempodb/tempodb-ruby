@@ -1,3 +1,7 @@
+## 0.5.7
+
+* Use source encoding in Regexp (instead of "none")
+
 ## 0.5.6
 
 * Bugfix - Support forward slashes in series keys
