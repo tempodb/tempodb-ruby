@@ -63,6 +63,16 @@ describe TempoDB::Client do
     end
   end
 
+  describe "delete_series" do
+    it "returns a delete summary with the deleted count" do
+      stub_request(:delete, "https://api.tempo-db.com/v1/series/?key=key1&key=key2").
+        to_return(:status => 200, :body => response_fixture('delete_series.json'), :headers => {})
+      client = TempoDB::Client.new("key", "secret")
+      summary = client.delete_series(:keys => ["key1", "key2"])
+      summary.deleted.should == 2
+    end
+  end
+
   describe "read_key" do
     it "has an array of DataPoints" do
       start = Time.parse("2012-01-01 00:00 UTC")
