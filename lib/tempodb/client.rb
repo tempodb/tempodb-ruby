@@ -116,6 +116,12 @@ module TempoDB
       do_post(url, nil, json)
     end
 
+    def write_multi(data)
+      json = JSON.generate(data)
+      url = ["multi"]
+      do_post(url, nil, json)
+    end
+
     def increment_id(series_id, data)
       series_type = 'id'
       series_val = series_id
@@ -134,6 +140,12 @@ module TempoDB
         :data => data
       })
       url = ["increment"]
+      do_post(url, nil, json)
+    end
+
+    def increment_multi(data)
+      json = JSON.generate(data)
+      url = ["multi","increment"]
       do_post(url, nil, json)
     end
 
