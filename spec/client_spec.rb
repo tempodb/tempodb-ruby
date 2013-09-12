@@ -179,6 +179,43 @@ describe TempoDB::Client do
     end
   end
 
+  describe "write_multi" do
+    it "writes multiple values to multiple series for different timestamps" do
+      stub_request(:post, "https://api.tempo-db.com/v1/multi/").
+        to_return(:status => 200, :body => "", :headers => {})
+      client = TempoDB::Client.new("key", "secret")
+      data = [
+              { :t => Time.utc(2013, 9, 12, 1, 0), :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4.164 },
+              { :t => Time.now, :key => 'key3', :v => 324.991 }
+             ]
+      client.write_multi(data).should == {}
+    end
+
+    it "should return 207 on partial failure" do
+      response_body = <<END
+{
+  multistatus: [
+    { status: "422", messages: [ "Must provide a series ID or key" ] },
+    { status: "200", messages: [] },
+    { status: "422", messages: [
+                                "Must provide a numeric value",
+                                "Must provide a series ID or key"
+                               ]}
+  ]
+}
+END
+    stub_request(:post, "https://api.tempo-db.com/v1/multi/").
+      to_return(:status => 207, :body => response_body, :headers => {})
+    client = TempoDB::Client.new("key", "secret")
+    data = [
+            { :t => Time.now, :v => 123.4 },
+            { :t => Time.utc(2013, 9, 13, 1, 0), :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4.164 },
+            {}
+           ]
+    lambda { client.write_multi(data) }.should raise_error(TempoDB::TempoDBClientError)
+    end
+  end
+
   describe "increment_id" do
     it "adds the value to the datapoint value for the given series id" do
       stub_request(:post, "https://api.tempo-db.com/v1/series/id/0e3178aea7964c4cb1a15db1e80e2a7f/increment/").
@@ -218,6 +255,19 @@ describe TempoDB::Client do
               { :key => 'key3', :v => 324.991 }
              ]
       client.increment_bulk(ts, data).should == {}
+    end
+  end
+
+  describe "increment_multi" do
+    it "increments multiple values to multiple series for different timestamps" do
+      stub_request(:post, "https://api.tempo-db.com/v1/multi/increment/").
+        to_return(:status => 200, :body => "", :headers => {})
+      client = TempoDB::Client.new("key", "secret")
+      data = [
+              { :t => Time.utc(2013, 9, 12, 1, 0), :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4 },
+              { :t => Time.now, :key => 'key3', :v => 32 }
+             ]
+      client.increment_multi(data).should == {}
     end
   end
 
