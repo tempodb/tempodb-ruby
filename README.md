@@ -136,7 +136,7 @@ The following example reads the list of series with key *test1* (should only be 
     end
 
 ## delete_series(*options={}*)
-Delete series objects by the given criteria. This method has the same query parameters as `get_series`. Series can be deleted by id, key, tag and attribute.
+Delete series objects by the given criteria. This method has the same query parameters as `get_series`. Series can be deleted by id, key, tag and attribute. Calling this method with no filter arguments will delete all series in a given database (Similar to 'DELETE * FROM series' in sql)
 
 ### Parameters
 * ids - an array of ids to include (Array of strings)
