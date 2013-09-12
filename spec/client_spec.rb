@@ -194,10 +194,10 @@ describe TempoDB::Client do
     it "should return 207 on partial failure" do
       response_body = <<END
 {
-  multistatus: [
-    { status: "422", messages: [ "Must provide a series ID or key" ] },
-    { status: "200", messages: [] },
-    { status: "422", messages: [
+  "multistatus": [
+    { "status": "422", "messages": [ "Must provide a series ID or key" ] },
+    { "status": "200", "messages": [] },
+    { "status": "422", "messages": [
                                 "Must provide a numeric value",
                                 "Must provide a series ID or key"
                                ]}
@@ -212,7 +212,7 @@ END
             { :t => Time.utc(2013, 9, 13, 1, 0), :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4.164 },
             {}
            ]
-    lambda { client.write_multi(data) }.should raise_error(TempoDB::TempoDBClientError)
+    lambda { client.write_multi(data) }.should raise_error(TempoDB::TempoDBMultiStatusError)
     end
   end
 
