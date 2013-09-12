@@ -302,6 +302,8 @@ module TempoDB
         rescue JSON::ParserError
           return body
         end
+      elsif response.status == 207
+        raise TempoDBMultiStatusError.new(response.status, JSON.parse(response.body))
       else
         raise TempoDBClientError.new("Error: #{response.status_code} #{response.reason}\n#{response.body}")
       end
@@ -319,6 +321,14 @@ module TempoDB
     def to_s
       return "#{user_error} (#{error})" if user_error
       "#{error}"
+    end
+  end
+
+  class TempoDBMultiStatusError < RuntimeError
+    attr_accessor :http_response, :multi_status_response
+    def initialize(http_response, multi_status_response)
+      @http_response = http_response
+      @multi_status_response = multi_status_response
     end
   end
 end
