@@ -192,20 +192,8 @@ describe TempoDB::Client do
     end
 
     it "should return 207 on partial failure" do
-      response_body = <<END
-{
-  "multistatus": [
-    { "status": "422", "messages": [ "Must provide a series ID or key" ] },
-    { "status": "200", "messages": [] },
-    { "status": "422", "messages": [
-                                "Must provide a numeric value",
-                                "Must provide a series ID or key"
-                               ]}
-  ]
-}
-END
     stub_request(:post, "https://api.tempo-db.com/v1/multi/").
-      to_return(:status => 207, :body => response_body, :headers => {})
+      to_return(:status => 207, :body => response_fixture("multi_status_response.json"), :headers => {})
     client = TempoDB::Client.new("key", "secret")
     data = [
             { :t => Time.now, :v => 123.4 },
