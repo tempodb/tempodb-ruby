@@ -117,9 +117,8 @@ module TempoDB
     end
 
     def write_multi(data)
-      json = JSON.generate(data)
       url = ["multi"]
-      do_post(url, nil, json)
+      do_multi(url, data)
     end
 
     def increment_id(series_id, data)
@@ -144,9 +143,8 @@ module TempoDB
     end
 
     def increment_multi(data)
-      json = JSON.generate(data)
       url = ["multi","increment"]
-      do_post(url, nil, json)
+      do_multi(url, data)
     end
 
     private
@@ -259,6 +257,17 @@ module TempoDB
     def do_put(url_parts, headers=nil, body=nil)  # :nodoc:
       uri = build_uri(url_parts)
       do_http_with_body(uri, Net::HTTP::Put.new(uri.request_uri, headers), body)
+    end
+
+    def do_multi(url_parts, datapoints)
+      converted = datapoints.map do |dp|
+        if dp.has_key?(:t)
+          ts = dp[:t].iso8601(3)
+          dp[:t] = ts
+        end
+        dp
+      end
+      do_post(url_parts, nil, JSON.generate(converted))
     end
 
     def build_uri(url_parts, params=nil)
