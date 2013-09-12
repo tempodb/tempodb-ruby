@@ -192,15 +192,15 @@ describe TempoDB::Client do
     end
 
     it "should return 207 on partial failure" do
-    stub_request(:post, "https://api.tempo-db.com/v1/multi/").
-      to_return(:status => 207, :body => response_fixture("multi_status_response.json"), :headers => {})
-    client = TempoDB::Client.new("key", "secret")
-    data = [
-            { :t => Time.now, :v => 123.4 },
-            { :t => Time.utc(2013, 9, 13, 1, 0), :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4.164 },
-            {}
-           ]
-    lambda { client.write_multi(data) }.should raise_error(TempoDB::TempoDBMultiStatusError)
+      stub_request(:post, "https://api.tempo-db.com/v1/multi/").
+        to_return(:status => 207, :body => response_fixture("multi_status_response.json"), :headers => {})
+      client = TempoDB::Client.new("key", "secret")
+      data = [
+              { :t => Time.now, :v => 123.4 },
+              { :t => Time.utc(2013, 9, 13, 1, 0), :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4.164 },
+              {}
+             ]
+      lambda { client.write_multi(data) }.should raise_error(TempoDB::TempoDBMultiStatusError)
     end
   end
 
