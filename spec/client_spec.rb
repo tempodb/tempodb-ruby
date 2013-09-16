@@ -182,11 +182,12 @@ describe TempoDB::Client do
   describe "write_multi" do
     it "writes multiple values to multiple series for different timestamps" do
       stub_request(:post, "https://api.tempo-db.com/v1/multi/").
-        to_return(:status => 200, :body => "", :headers => {})
+        to_return(:status => 200, :body => "", :headers => {}).
+        with { |request| request.body =~ /"t":"2013-09-12T01:00:00.000Z"/ }
       client = TempoDB::Client.new("key", "secret")
       data = [
               { :t => Time.utc(2013, 9, 12, 1, 0), :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4.164 },
-              { :t => Time.now, :key => 'key3', :v => 324.991 }
+              { :t => Time.utc(2013, 9, 13, 1, 0), :key => 'key3', :v => 324.991 }
              ]
       client.write_multi(data).should == {}
     end

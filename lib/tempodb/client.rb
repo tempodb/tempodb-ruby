@@ -261,11 +261,12 @@ module TempoDB
 
     def do_multi(url_parts, datapoints)
       converted = datapoints.map do |dp|
-        if dp.has_key?(:t)
-          ts = dp[:t].iso8601(3)
-          dp[:t] = ts
+        dp_copy = dp.clone
+        if dp_copy.has_key?(:t)
+          ts = dp_copy[:t].iso8601(3)
+          dp_copy[:t] = ts
         end
-        dp
+        dp_copy
       end
       do_post(url_parts, nil, JSON.generate(converted))
     end
