@@ -18,23 +18,14 @@ module TempoDB
       Series.from_json(json)
     end
 
-    def get_series(options={})
-      defaults = {
-        :ids => [],
-        :keys => [],
-        :tags => [],
-        :attributes => {}
-      }
-      options = defaults.merge(options)
-
-      params = {}
-      if options[:ids] then params[:id] = options[:ids] end
-      if options[:keys] then params[:key] = options[:keys] end
-      if options[:tags] then params[:tag] = options[:tags] end
-      if options[:attributes] then params[:attr] = options[:attributes] end
-
-      json = do_get(["series"], params)
+    def get_series(params={})
+      json = do_get(["series"], attribute_params(params))
       json.map {|series| Series.from_json(series)}
+    end
+
+    def delete_series(params)
+      json = do_delete(["series"], attribute_params(params))
+      DeleteSummary.from_json(json)
     end
 
     def update_series(series)
@@ -148,6 +139,22 @@ module TempoDB
     end
 
     private
+
+    # Takes an input params hash, applies the mapping hash to transform key names and pass
+    # through all other unrecognized hash key entries
+    def map_params!(params, mapping)
+      p = {}
+      mapping.each do |from, to|
+        value = params[from]
+        p[to] = value if value
+        params.delete(from)
+      end
+      p.merge(params)
+    end
+
+    def attribute_params(params)
+      map_params!(params, :ids => :id, :keys => :key, :tags => :tag, :attributes => :attr)
+    end
 
     def _read(series_type, series_val, start, stop, options={})
       defaults = {
@@ -293,7 +300,7 @@ module TempoDB
         elsif value.is_a? Hash
           value.each {|k, v| p.push("#{URI.escape(key.to_s)}[#{URI.escape(k.to_s)}]=#{URI.escape(v)}")}
         else
-          p.push(URI.escape(key.to_s) + "=" + URI.escape(value))
+          p.push(URI.escape(key.to_s) + "=" + URI.escape(value.to_s))
         end
       end
       p.join("&")

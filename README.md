@@ -52,6 +52,12 @@ and a statistics summary table. The Summary table contains statistics for the ti
 * data - datapoints (Array of DataPoints)
 * summary - a summary table of statistics for the queried range (TempoDB::Summary)
 
+## DeleteSummary(deleted)
+Represents data associated with a delete operation. This is similar to what you would get back when executing a SQL `UPDATE` or `DELETE` query that returns the number of rows affected.
+### Members
+* deleted - the number of series that were successfully deleted
+
+
 # Client API
 
 ## create_series(*key=nil*)
@@ -128,6 +134,39 @@ The following example reads the list of series with key *test1* (should only be 
         series.tags = ["tag3"]
         client.update_series(series)
     end
+
+## delete_series(*options={}*)
+Delete series objects by the given filter criteria.
+This method has the same query parameters as `get_series`. Series can be
+deleted by id, key, tag and attribute. You must specify at least one filter
+query param for deletion. If you want to truncate your database (remove all
+series), you must specify `:allow_truncation => true`.
+
+### Parameters
+* ids - an array of ids to include (Array of strings)
+* keys - an array of keys to include (Array of strings)
+* tags - an array of tags to filter on. These tags are and'd together (Array of strings)
+* attributes - a hash of key/value pairs to filter on. These attributes are and'd together. (Hash)
+* allow_truncation - a boolean that must be passed when you wish to delete all your series. Mutually exclusive with the filter query parameters. (Boolean)
+
+### Returns
+A DeleteSummary object
+
+### Example
+
+The following example deletes all series with "tag1" and "tag2" and attribute "attr1" equal to "value1".
+
+	require 'tempodb'
+
+	client = TempoDB::Client.new("api-key", "api-secret")
+
+	tags = ["tag1", "tag2"]
+	attributes = {
+		:attr1 => "value1"
+	}
+
+	summary = client.delete_series(:tags => tags, :attributes => attributes)
+
 
 ## read(start, stop, *options={}*)
 
