@@ -1,3 +1,8 @@
+## 0.6.0
+
+* Add delete series
+* Add multi write and increment
+
 ## 0.5.7
 
 * Use source encoding in Regexp (instead of "none")
