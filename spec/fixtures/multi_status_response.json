@@ -1,0 +1,10 @@
+{
+  "multistatus": [
+    { "status": "422", "messages": [ "Must provide a series ID or key" ] },
+    { "status": "200", "messages": [] },
+    { "status": "422", "messages": [
+                                "Must provide a numeric value",
+                                "Must provide a series ID or key"
+                               ]}
+  ]
+}

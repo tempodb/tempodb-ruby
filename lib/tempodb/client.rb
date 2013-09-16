@@ -116,6 +116,11 @@ module TempoDB
       do_post(url, nil, json)
     end
 
+    def write_multi(data)
+      url = ["multi"]
+      do_multi(url, data)
+    end
+
     def increment_id(series_id, data)
       series_type = 'id'
       series_val = series_id
@@ -135,6 +140,11 @@ module TempoDB
       })
       url = ["increment"]
       do_post(url, nil, json)
+    end
+
+    def increment_multi(data)
+      url = ["multi","increment"]
+      do_multi(url, data)
     end
 
     private
@@ -249,6 +259,18 @@ module TempoDB
       do_http_with_body(uri, Net::HTTP::Put.new(uri.request_uri, headers), body)
     end
 
+    def do_multi(url_parts, datapoints)
+      converted = datapoints.map do |dp|
+        dp_copy = dp.clone
+        if dp_copy.has_key?(:t)
+          ts = dp_copy[:t].iso8601(3)
+          dp_copy[:t] = ts
+        end
+        dp_copy
+      end
+      do_post(url_parts, nil, JSON.generate(converted))
+    end
+
     def build_uri(url_parts, params=nil)
       versioned_url_parts = [TempoDB::API_VERSION] + url_parts
       url = versioned_url_parts.map do |part|
@@ -290,6 +312,8 @@ module TempoDB
         rescue JSON::ParserError
           return body
         end
+      elsif response.status == 207
+        raise TempoDBMultiStatusError.new(response.status, JSON.parse(response.body))
       else
         raise TempoDBClientError.new("Error: #{response.status_code} #{response.reason}\n#{response.body}")
       end
@@ -307,6 +331,14 @@ module TempoDB
     def to_s
       return "#{user_error} (#{error})" if user_error
       "#{error}"
+    end
+  end
+
+  class TempoDBMultiStatusError < RuntimeError
+    attr_accessor :http_response, :multi_status_response
+    def initialize(http_response, multi_status_response)
+      @http_response = http_response
+      @multi_status_response = multi_status_response
     end
   end
 end

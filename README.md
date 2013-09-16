@@ -342,6 +342,52 @@ The following example writes datapoints to four separate series at the same time
 
     client.write_bulk(ts, data)
 
+## write_multi(data)
+Write datapoints to multiple series for multiple timestamps. This function takes an array of hashes containing the timestamp, either the series id or series key, and the value.  For example:
+
+    data = [
+        { :t => Time.utc(2013, 8, 21), :id => '01868c1a2aaf416ea6cd8edd65e7a4b8', :v => 4.164 },
+        { :t => Time.utc(2013, 8, 22), :id => '38268c3b231f1266a392931e15e99231', :v => 73.13 },
+        { :t => Time.utc(2013, 8, 23), :key => 'your-custom-key', :v => 55.423 },
+        { :t => Time.utc(2013, 8, 24), :key => 'foo', :v => 324.991 },
+    ]
+
+### Parameters
+* data - the data to write (Arrray of {:t, :id, :v} or {:t, :key, :v} hashes)
+
+### Returns
+The return body is either empty on success (response code will be 200) or will raise a TempoDB::TempoDBMultiStatusError containing an error hash with a array of response objects in event of a single or multi-point failure (response code will be 207). Each response object contains a status code and an array of error messages. This array has a one to one correspondence with the original array. For example if you submitted this array:
+
+    data = [
+        { 't': datetime.datetime(2013, 8, 21), :v => 4.164 },
+        { 't': datetime.datetime(2013, 8, 22), :id => '38268c3b231f1266a392931e15e99231', :v => 312.2},
+        {}
+    ]
+
+You would recieve this 207 response body (in TempoDB::TempoDBMultiStatusError.multi_status_response):
+
+    {"multistatus"=> [
+      { "status"=> "422", "messages"=> [ "Must provide a series ID or key" ] },
+      { "status"=> "200", "messages"=> [] },
+      { "status"=> "422", "messages"=> [ "Must provide a numeric value", "Must provide a series ID or key" ] }
+    ]}
+
+### Example
+
+The following example writes datapoints to four separate series to 4 different timestamps.
+
+    require 'tempodb'
+
+    client = TempoDB::Client("api-key", "api-secret")
+    data = [
+        { :t => Time.utc(2013, 8, 21), :id => '01868c1a2aaf416ea6cd8edd65e7a4b8', :v => 4.164 },
+        { :t => Time.utc(2013, 8, 22), :id => '38268c3b231f1266a392931e15e99231', :v => 73.13 },
+        { :t => Time.utc(2013, 8, 23), :key => 'your-custom-key', :v => 55.423 },
+        { :t => Time.utc(2013, 8, 24), :key => 'foo', :v => 324.991 },
+    ]
+
+    client.write_multi(data)
+
 ## increment_id(series_id, data)
 Increments the value of the specified series at the given timestamp. The value of the datapoint is the amount to increment. This is similar to a write. However the value is incremented by the datapoint value
 instead of overwritten. Values are incremented atomically, so this is useful for counting events. The series id and an array of DataPoints are required.
@@ -432,6 +478,52 @@ The following example increments datapoints of four separate series at the same 
     ]
 
     client.increment_bulk(ts, data)
+
+## increment_multi(data)
+Increment datapoints to multiple series for multiple timestamps. This function takes an array of hashes containing the timestamp, either the series id or series key, and the value.  For example:
+
+    data = [
+        { :t => Time.utc(2013, 8, 21), :id => '01868c1a2aaf416ea6cd8edd65e7a4b8', :v => 4 },
+        { :t => Time.utc(2013, 8, 22), :id => '38268c3b231f1266a392931e15e99231', :v => 73 },
+        { :t => Time.utc(2013, 8, 23), :key => 'your-custom-key', :v => 55 },
+        { :t => Time.utc(2013, 8, 24), :key => 'foo', :v => 324 },
+    ]
+
+### Parameters
+* data - the data to increment (Arrray of {:t, :id, :v} or {:t, :key, :v} hashes)
+
+### Returns
+The return body is either empty on success (response code will be 200) or will raise a TempoDB::TempoDBMultiStatusError containing an error hash with a array of response objects in event of a single or multi-point failure (response code will be 207). Each response object contains a status code and an array of error messages. This array has a one to one correspondence with the original array. For example if you submitted this array:
+
+    data = [
+        { 't': datetime.datetime(2013, 8, 21), :v => 44 },
+        { 't': datetime.datetime(2013, 8, 22), :id => '38268c3b231f1266a392931e15e99231', :v => 3 },
+        {}
+    ]
+
+You would recieve this 207 response body (in TempoDB::TempoDBMultiStatusError.multi_status_response):
+
+    {"multistatus"=> [
+      { "status"=> "422", "messages"=> [ "Must provide a series ID or key" ] },
+      { "status"=> "200", "messages"=> [] },
+      { "status"=> "422", "messages"=> [ "Must provide a numeric value", "Must provide a series ID or key" ] }
+    ]}
+
+### Example
+
+The following example increments datapoints to four separate series to 4 different timestamps.
+
+    require 'tempodb'
+
+    client = TempoDB::Client("api-key", "api-secret")
+    data = [
+        { :t => Time.utc(2013, 8, 21), :id => '01868c1a2aaf416ea6cd8edd65e7a4b8', :v => 1 },
+        { :t => Time.utc(2013, 8, 22), :id => '38268c3b231f1266a392931e15e99231', :v => 7 },
+        { :t => Time.utc(2013, 8, 23), :key => 'your-custom-key', :v => 5 },
+        { :t => Time.utc(2013, 8, 24), :key => 'foo', :v => 324 },
+    ]
+
+    client.increment_multi(data)
 
 ## delete_id(series_id, start, stop, *options={}*)
 
