@@ -278,7 +278,7 @@ module TempoDB
         elsif value.is_a? Hash
           value.each {|k, v| p.push("#{URI.escape(key.to_s)}[#{URI.escape(k.to_s)}]=#{URI.escape(v)}")}
         else
-          p.push(URI.escape(key.to_s) + "=" + URI.escape(value))
+          p.push(URI.escape(key.to_s) + "=" + URI.escape(value.to_s))
         end
       end
       p.join("&")

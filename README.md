@@ -136,13 +136,18 @@ The following example reads the list of series with key *test1* (should only be 
     end
 
 ## delete_series(*options={}*)
-Delete series objects by the given criteria. This method has the same query parameters as `get_series`. Series can be deleted by id, key, tag and attribute. Calling this method with no filter arguments will delete all series in a given database (Similar to 'DELETE * FROM series' in sql)
+Delete series objects by the given filter criteria.
+This method has the same query parameters as `get_series`. Series can be
+deleted by id, key, tag and attribute. You must specify at least one filter
+query param for deletion. If you want to truncate your database (remove all
+series), you must specify `:allow_truncation => true`.
 
 ### Parameters
 * ids - an array of ids to include (Array of strings)
 * keys - an array of keys to include (Array of strings)
 * tags - an array of tags to filter on. These tags are and'd together (Array of strings)
 * attributes - a hash of key/value pairs to filter on. These attributes are and'd together. (Hash)
+* allow_truncation - a boolean that must be passed when you wish to delete all your series. Mutually exclusive with the filter query parameters. (Boolean)
 
 ### Returns
 A DeleteSummary object
