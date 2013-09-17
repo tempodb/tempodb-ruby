@@ -142,18 +142,19 @@ module TempoDB
 
     # Takes an input params hash, applies the mapping hash to transform key names and pass
     # through all other unrecognized hash key entries
-    def map_params!(params, mapping)
+    def map_params(params, mapping)
+      cloned = params.clone
       p = {}
       mapping.each do |from, to|
-        value = params[from]
+        value = cloned[from]
         p[to] = value if value
-        params.delete(from)
+        cloned.delete(from)
       end
-      p.merge(params)
+      p.merge(cloned)
     end
 
     def attribute_params(params)
-      map_params!(params, :ids => :id, :keys => :key, :tags => :tag, :attributes => :attr)
+      map_params(params, :ids => :id, :keys => :key, :tags => :tag, :attributes => :attr)
     end
 
     def _read(series_type, series_val, start, stop, options={})
