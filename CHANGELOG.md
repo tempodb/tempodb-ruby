@@ -1,3 +1,7 @@
+## 0.6.1
+
+* Fixes mutation of inbound filter params
+
 ## 0.6.0
 
 * Add delete series
