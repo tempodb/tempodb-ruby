@@ -62,34 +62,29 @@ module TempoDB
       json.map {|ds| DataSet.from_json(ds)}
     end
 
-    def read_id(series_id, start, stop, options={})
-      series_type = "id"
-      series_val = series_id
-      _read(series_type, series_val, start, stop, options)
-    end
+    def read_data(series_key, start, stop, options={})
+      defaults = {
+        :interval => "",
+        :function => "",
+        :tz => ""
+      }
+      options = defaults.merge(options)
 
-    def read_key(series_key, start, stop, options={})
-      series_type = "key"
-      series_val = series_key
-      _read(series_type, series_val, start, stop, options)
-    end
+      params = {}
+      params[:start] = start.iso8601(3)
+      params[:end] = stop.iso8601(3)
+      params[:interval] = options[:interval] if options[:interval]
+      params[:function] = options[:function] if options[:function]
+      params[:tz] = options[:tz] if options [:tz]
 
-    def delete_id(series_id, start, stop, options={})
-      series_type = "id"
-      series_val = series_id
-      _delete(series_type, series_val, start, stop, options)
+      url = ["series", "key", series_key, "segment"]
+      TempoDB::Cursor.new(build_uri(url, params), self, SeriesCursor, DataSet)
     end
 
     def delete_key(series_key, start, stop, options={})
       series_type = "key"
       series_val = series_key
       _delete(series_type, series_val, start, stop, options)
-    end
-
-    def write_id(series_id, data)
-      series_type = 'id'
-      series_val = series_id
-      write(series_type, series_val, data)
     end
 
     def write_key(series_key, data)
@@ -112,12 +107,6 @@ module TempoDB
       do_multi(url, data)
     end
 
-    def increment_id(series_id, data)
-      series_type = 'id'
-      series_val = series_id
-      increment(series_type, series_val, data)
-    end
-
     def increment_key(series_key, data)
       series_type = 'key'
       series_val = series_key
@@ -136,6 +125,27 @@ module TempoDB
     def increment_multi(data)
       url = ["multi","increment"]
       do_multi(url, data)
+    end
+
+    def cursored_get(uri, headers=nil)  # :nodoc:
+      do_http(uri, Net::HTTP::Get.new(uri.request_uri, headers))
+    end
+
+    def build_uri(url_parts, params=nil)
+      versioned_url_parts = [TempoDB::API_VERSION] + url_parts
+      url = versioned_url_parts.map do |part|
+        URI.escape(part, Regexp.new("[^#{URI::REGEXP::PATTERN::UNRESERVED}]", false))
+      end.join("/")
+      target = construct_uri(url)
+      if params
+        target.query = urlencode(params)
+      end
+      URI.parse(target.to_s)
+    end
+
+    def construct_uri(url)
+      protocol = @secure ? "https" : "http"
+      URI::Generic.new(protocol, nil, @host, @port, nil, "/#{url}/", nil, nil, nil)
     end
 
     private
@@ -228,17 +238,47 @@ module TempoDB
                                      "There may be a problem with the set of certificates in \"#{TempoDB::TRUSTED_CERT_FILE}\".  " + e)
       end
 
+      response
+    end
+
+    def do_http_deprecated(uri, request) # :nodoc:
+      if @http_client.nil?
+        @http_client = HTTPClient.new
+        @http_client.transparent_gzip_decompression = true
+        if @secure
+          @http_client.ssl_config.clear_cert_store
+          @http_client.ssl_config.set_trust_ca(TempoDB::TRUSTED_CERT_FILE)
+        end
+      end
+
+      request.basic_auth @key, @secret
+      request['User-Agent'] = "tempodb-ruby/#{TempoDB::VERSION}"
+      request['Accept-Encoding'] = "gzip"
+
+      method = request.method.downcase.intern
+      http_client_attrs = {
+        :header => Hash[request.to_hash.map {|k,v| [k, v.first] if v.is_a?(Array) && v.size == 1}],
+        :body => request.body
+      }
+
+      begin
+        response = @http_client.request(method, uri, http_client_attrs)
+      rescue OpenSSL::SSL::SSLError => e
+        raise TempoDBClientError.new("SSL error connecting to TempoDB.  " +
+                                     "There may be a problem with the set of certificates in \"#{TempoDB::TRUSTED_CERT_FILE}\".  " + e)
+      end
+
       parse_response(response)
     end
 
     def do_get(url, params=nil, headers=nil)  # :nodoc:
       uri = build_uri(url, params)
-      do_http(uri, Net::HTTP::Get.new(uri.request_uri, headers))
+      do_http_deprecated(uri, Net::HTTP::Get.new(uri.request_uri, headers))
     end
 
     def do_delete(url, params=nil, headers=nil)
       uri = build_uri(url, params)
-      do_http(uri, Net::HTTP::Delete.new(uri.request_uri, headers))
+      do_http_deprecated(uri, Net::HTTP::Delete.new(uri.request_uri, headers))
     end
 
     def do_http_with_body(uri, request, body)
@@ -254,7 +294,7 @@ module TempoDB
           request.body = s
         end
       end
-      do_http(uri, request)
+      do_http_deprecated(uri, request)
     end
 
     def do_post(url_parts, headers=nil, body=nil)  # :nodoc:
@@ -277,20 +317,6 @@ module TempoDB
         dp_copy
       end
       do_post(url_parts, nil, JSON.generate(converted))
-    end
-
-    def build_uri(url_parts, params=nil)
-      versioned_url_parts = [TempoDB::API_VERSION] + url_parts
-      url = versioned_url_parts.map do |part|
-        URI.escape(part, Regexp.new("[^#{URI::REGEXP::PATTERN::UNRESERVED}]", false))
-      end.join("/")
-      protocol = @secure ? "https" : "http"
-      target = URI::Generic.new(protocol, nil, @host, @port, nil, "/#{url}/", nil, nil, nil)
-
-      if params
-        target.query = urlencode(params)
-      end
-      URI.parse(target.to_s)
     end
 
     def urlencode(params)

@@ -6,6 +6,7 @@ require 'time'
 require 'uri'
 
 require 'tempodb/client'
+require 'tempodb/cursor'
 require 'tempodb/version'
 require 'tempodb/series'
 require 'tempodb/data_point'

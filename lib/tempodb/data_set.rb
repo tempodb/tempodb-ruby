@@ -1,22 +1,20 @@
 module TempoDB
   class DataSet
-    attr_accessor :series, :start, :stop, :data, :summary
+    attr_accessor :series, :data, :rollup, :tz
 
-    def initialize(series, start, stop, data=[], summary=nil)
+    def initialize(series, data, rollup, tz)
       @series = series
-      @start = start
-      @stop = stop
       @data = data
-      @summary = summary
+      @rollup = rollup
+      @tz = tz
     end
 
     def self.from_json(m)
       series = Series.from_json(m["series"])
-      start = Time.parse(m["start"])
-      stop = Time.parse(m["end"])
-      data = m["data"].map {|dp| DataPoint.from_json(dp)}
-      summary = Summary.from_json(m["summary"])
-      new(series, start, stop, data, summary)
+      data = m["data"].map { |dp| DataPoint.from_json(dp)}
+      rollup = m["rollup"]
+      tz = m["tz"]
+      new(series, data, rollup, tz)
     end
   end
 end
