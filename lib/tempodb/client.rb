@@ -18,9 +18,8 @@ module TempoDB
       Series.from_json(json)
     end
 
-    def get_series(params={})
-      json = do_get(["series"], attribute_params(params))
-      json.map {|series| Series.from_json(series)}
+    def list_series(params={})
+      TempoDB::Cursor.new(build_uri(["series"], attribute_params(params)), self, SeriesCursor, Series)
     end
 
     def delete_series(params)
@@ -31,35 +30,6 @@ module TempoDB
     def update_series(series)
       json = do_put(["series", "id", series.id], nil, series.to_json)
       Series.from_json(json)
-    end
-
-    def read(start, stop, options={})
-      defaults = {
-        :interval => "",
-        :function => "",
-        :tz => "",
-        :ids => [],
-        :keys => [],
-        :tags => [],
-        :attributes => {}
-      }
-      options = defaults.merge(options)
-
-      params = {}
-      params[:start] = start.iso8601(3)
-      params[:end] = stop.iso8601(3)
-      params[:interval] = options[:interval] if options[:interval]
-      params[:function] = options[:function] if options[:function]
-      params[:tz] = options[:tz] if options[:tz]
-      params[:id] = options[:ids] if options[:ids]
-      params[:key] = options[:keys] if options[:keys]
-      params[:tag] = options[:tags] if options[:tags]
-      params[:attr] = options[:attributes] if options[:attributes]
-
-      url = ["data"]
-      json = do_get(url, params)
-
-      json.map {|ds| DataSet.from_json(ds)}
     end
 
     def read_data(series_key, start, stop, options={})
@@ -78,7 +48,7 @@ module TempoDB
       params[:tz] = options[:tz] if options [:tz]
 
       url = ["series", "key", series_key, "segment"]
-      TempoDB::Cursor.new(build_uri(url, params), self, SeriesCursor, DataSet)
+      TempoDB::Cursor.new(build_uri(url, params), self, DataPointCursor, DataSet)
     end
 
     def delete_key(series_key, start, stop, options={})

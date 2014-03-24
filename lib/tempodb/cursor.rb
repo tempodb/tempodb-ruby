@@ -23,8 +23,10 @@ module TempoDB
       loop do
         if @segment == nil || @segment.empty?
           response = @client.cursored_get(@next_uri)
+          check_response(response)
           json = JSON.parse(response.body)
-          @segment = @inner_cursor_type.extract(@wrapper.from_json(json)).reverse
+          wrapped = json.is_a?(Array) ? json.map { |obj| @wrapper.from_json(obj) } : @wrapper.from_json(json)
+          @segment = @inner_cursor_type.extract(wrapped).reverse
           if !response.header[TRUNCATED_KEY].empty?
             @next_uri = URI(@client.construct_uri(response.links.by("rel").fetch("next").first["uri"]).to_s.chomp("/"))
           else
@@ -42,11 +44,25 @@ module TempoDB
         return unless @next_uri
       end
     end
+
+    private
+
+    def check_response(response)
+      unless response.code == HTTP::Status::OK
+        rasie TempoDBClientError.new("TempoDB API returned #{response.code} as status when 200 was expected", response)
+      end
+    end
+  end
+
+  class DataPointCursor
+    def self.extract(data_set)
+      data_set.data
+    end
   end
 
   class SeriesCursor
-    def self.extract(data_set)
-      data_set.data
+    def self.extract(series)
+      series
     end
   end
 end
