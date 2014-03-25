@@ -51,6 +51,14 @@ module TempoDB
       TempoDB::Cursor.new(build_uri(url, params), self, DataPointCursor, DataSet)
     end
 
+    def read_multi(start, stop, options = {})
+      params = rollup_params(attribute_params(options))
+      params[:start] = start.iso8601(3)
+      params[:stop] = stop.iso8601(3)
+      url = ["multi"]
+      TempoDB::Cursor.new(build_uri(url, params), self, MultiPointCursor, MultiPointSegment)
+    end
+
     def delete_key(series_key, start, stop, options={})
       series_type = "key"
       series_val = series_key
@@ -58,7 +66,7 @@ module TempoDB
     end
 
     def write_key(series_key, data)
-      series_type = 'key'
+      series_type= 'key'
       series_val = series_key
       write(series_type, series_val, data)
     end
@@ -134,7 +142,19 @@ module TempoDB
     end
 
     def attribute_params(params)
-      map_params(params, :ids => :id, :keys => :key, :tags => :tag, :attributes => :attr)
+      map_params(params,
+                 :ids => 'id',
+                 :keys => 'key',
+                 :tags => 'tag',
+                 :attributes => 'attr')
+    end
+
+    def rollup_params(params)
+      map_params(params,
+                 :rollup_function => 'rollup.fold',
+                 :rollup_period => 'rollup.period',
+                 :interpolation_function => 'interpolation.function',
+                 :interpolation_period => 'interpolation.period')
     end
 
     def _read(series_type, series_val, start, stop, options={})

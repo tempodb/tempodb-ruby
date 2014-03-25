@@ -49,7 +49,7 @@ module TempoDB
 
     def check_response(response)
       unless response.code == HTTP::Status::OK
-        rasie TempoDBClientError.new("TempoDB API returned #{response.code} as status when 200 was expected", response)
+        raise TempoDBClientError.new("TempoDB API returned #{response.code} as status when 200 was expected: #{response.body}", response)
       end
     end
   end
@@ -63,6 +63,12 @@ module TempoDB
   class SeriesCursor
     def self.extract(series)
       series
+    end
+  end
+
+  class MultiPointCursor
+    def self.extract(multipoint_segment)
+      multipoint_segment.data
     end
   end
 end

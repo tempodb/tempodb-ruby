@@ -12,6 +12,8 @@ require 'tempodb/series'
 require 'tempodb/data_point'
 require 'tempodb/data_set'
 require 'tempodb/delete_summary'
+require 'tempodb/multipoint'
+require 'tempodb/multipoint_segment'
 require 'tempodb/summary'
 
 module TempoDB
