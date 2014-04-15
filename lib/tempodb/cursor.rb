@@ -54,21 +54,15 @@ module TempoDB
     end
   end
 
-  class DataPointCursor
+  class DataCursor
     def self.extract(data_set)
       data_set.data
     end
   end
 
-  class SeriesCursor
+  class ArrayCursor
     def self.extract(series)
       series
-    end
-  end
-
-  class MultiPointCursor
-    def self.extract(multipoint_segment)
-      multipoint_segment.data
     end
   end
 end

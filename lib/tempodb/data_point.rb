@@ -1,6 +1,6 @@
 module TempoDB
   class DataPoint
-    attr_accessor :ts, :value
+    attr_reader :ts, :value
 
     def initialize(ts, value)
       @ts = ts

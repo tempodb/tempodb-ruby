@@ -10,7 +10,7 @@ module TempoDB
     end
 
     def self.from_json(m)
-      series = Series.from_json(m["series"])
+      series = Series.from_json(m["series"]) if m["series"]
       data = m["data"].map { |dp| DataPoint.from_json(dp)}
       rollup = m["rollup"]
       tz = m["tz"]

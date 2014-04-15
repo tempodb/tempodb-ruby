@@ -1,6 +1,6 @@
 module TempoDB
   class Client
-    def initialize(key, secret, host=TempoDB::API_HOST, port=TempoDB::API_PORT, secure=true)
+    def initialize(key, secret, host = TempoDB::API_HOST, port = TempoDB::API_PORT, secure=true)
       @key = key
       @secret = secret
       @host = host
@@ -8,102 +8,125 @@ module TempoDB
       @secure = secure
     end
 
-    def create_series(key=nil)
+    def create_series(series_key = nil)
       params = {}
-      if key != nil
-        params[:key] = key
-      end
-
-      json = do_post(["series"], nil, params)
+      params['key'] = series_key if series_key
+      json = do_post(['series'], nil, params)
       Series.from_json(json)
-    end
-
-    def list_series(params={})
-      TempoDB::Cursor.new(build_uri(["series"], attribute_params(params)), self, SeriesCursor, Series)
     end
 
     def delete_series(params)
-      json = do_delete(["series"], attribute_params(params))
+      json = do_delete(['series'], attribute_params(params))
       DeleteSummary.from_json(json)
     end
 
-    def update_series(series)
-      json = do_put(["series", "id", series.id], nil, series.to_json)
+    def get_series(series_key)
+      json = do_get(['series', 'key', series_key])
       Series.from_json(json)
     end
 
-    def read_data(series_key, start, stop, options={})
-      defaults = {
-        :interval => "",
-        :function => "",
-        :tz => ""
-      }
-      options = defaults.merge(options)
+    def list_series(options = {})
+      Cursor.new(build_uri(['series'], attribute_params(options)), self, ArrayCursor, Series)
+    end
 
+    def update_series(series)
+      json = do_put(['series', 'id', series.id], nil, series.to_json)
+      Series.from_json(json)
+    end
+
+    def read_data(series_key, start, stop, options = {})
       params = {}
-      params[:start] = start.iso8601(3)
-      params[:end] = stop.iso8601(3)
-      params[:interval] = options[:interval] if options[:interval]
-      params[:function] = options[:function] if options[:function]
-      params[:tz] = options[:tz] if options [:tz]
+      params['start'] = start.iso8601(3)
+      params['end'] = stop.iso8601(3)
+      params['interval'] = options[:interval] if options[:interval]
+      params['function'] = options[:function] if options[:function]
+      params['tz'] = options[:tz] if options [:tz]
 
-      url = ["series", "key", series_key, "segment"]
-      TempoDB::Cursor.new(build_uri(url, params), self, DataPointCursor, DataSet)
+      url = ['series', 'key', series_key, 'segment']
+      Cursor.new(build_uri(url, params), self, DataCursor, DataSet)
+    end
+
+    def get_summary(series_key, start, stop, options = {})
+      params = {}
+      params['start'] = start.iso8601(3)
+      params['end'] = stop.iso8601(3)
+      params['tz'] = options[:tz] if options[:tz]
+      json = do_get(["series", "key", series_key, "summary"], params)
+      SeriesSummary.from_json(json)
+    end
+
+    def read_multi_rollups(series_key, start, stop, options = {})
+      params = rollup_params(options)
+      params['start'] = start.iso8601(3)
+      params['end'] = stop.iso8601(3)
+      url = ['series', 'key', series_key, 'data', 'rollups', 'segment']
+      Cursor.new(build_uri(url, params), self, DataCursor, MultiPointSegment)
+    end
+
+    def find_data(series_key, start, stop, options = {})
+      params = find_params(options)
+      params['start'] = start.iso8601(3)
+      params['end'] = stop.iso8601(3)
+      url = ['series', 'key', series_key, 'find']
+      Cursor.new(build_uri(url, params), self, DataCursor, DataPointFound)
+    end
+
+    def aggregate_data(aggregation, start, stop, options = {})
+      url = ['segment']
+      params = rollup_params((attribute_params(options)))
+      params['start'] = start.iso8601(3)
+      params['end'] = stop.iso8601(3)
+      params['aggregation.fold'] = aggregation
+      Cursor.new(build_uri(url, params), self, DataCursor, DataSet)
     end
 
     def read_multi(start, stop, options = {})
       params = rollup_params(attribute_params(options))
-      params[:start] = start.iso8601(3)
-      params[:stop] = stop.iso8601(3)
+      params['start'] = start.iso8601(3)
+      params['end'] = stop.iso8601(3)
       url = ["multi"]
-      TempoDB::Cursor.new(build_uri(url, params), self, MultiPointCursor, MultiPointSegment)
+      Cursor.new(build_uri(url, params), self, DataCursor, MultiPointSegment)
     end
 
-    def delete_key(series_key, start, stop, options={})
-      series_type = "key"
-      series_val = series_key
-      _delete(series_type, series_val, start, stop, options)
+    def write_data(series_key, data)
+      url = ['series', 'key', series_key, 'data']
+      body = data.collect {|dp| dp.to_json()}
+      do_post(url, nil, body)
     end
 
-    def write_key(series_key, data)
-      series_type= 'key'
-      series_val = series_key
-      write(series_type, series_val, data)
+    def write_multi(multi = nil)
+      req = multi || MultiWrite.new
+      if block_given?
+        yield req
+      elsif multi.nil?
+        raise TempoDBClientError.new("You must either pass a multi write object, or provide a block")
+      end
+
+      do_post(['multi'], nil, JSON.generate(req.series))
+    end
+    
+    def single_value(key, options = {})
+      params = single_value_params(options)
+      params['ts'] = params['ts'].iso8601(3) if params['ts']
+      json = do_get(['series', 'key', key, 'single'], single_value_params(params))
+      SingleValue.from_json(json)
     end
 
-    def write_bulk(ts, data)
-      json = JSON.generate({
-        :t => ts.iso8601(3),
-        :data => data
-      })
-      url = ["data"]
-      do_post(url, nil, json)
+    def multi_series_single_value(options = {})
+      params = single_value_params(attribute_params(options))
+      params['ts'] = params['ts'].iso8601(3) if params['ts']
+      Cursor.new(build_uri(['single'], params), self, ArrayCursor, SingleValue)
     end
 
-    def write_multi(data)
-      url = ["multi"]
-      do_multi(url, data)
+    def delete_data(series_key, start, stop)
+      params = {}
+      params['start'] = start.iso8601(3)
+      params['end'] = stop.iso8601(3)
+      url = ['series', 'key', series_key, 'data']
+      do_delete(url, params)
     end
 
-    def increment_key(series_key, data)
-      series_type = 'key'
-      series_val = series_key
-      increment(series_type, series_val, data)
-    end
-
-    def increment_bulk(ts, data)
-      json = JSON.generate({
-        :t => ts.iso8601(3),
-        :data => data
-      })
-      url = ["increment"]
-      do_post(url, nil, json)
-    end
-
-    def increment_multi(data)
-      url = ["multi","increment"]
-      do_multi(url, data)
-    end
+    # Utility methods: Should be private, but have cursor 'reach back'
 
     def cursored_get(uri, headers=nil)  # :nodoc:
       do_http(uri, Net::HTTP::Get.new(uri.request_uri, headers))
@@ -113,7 +136,7 @@ module TempoDB
       versioned_url_parts = [TempoDB::API_VERSION] + url_parts
       url = versioned_url_parts.map do |part|
         URI.escape(part, Regexp.new("[^#{URI::REGEXP::PATTERN::UNRESERVED}]", false))
-      end.join("/")
+      end.join('/')
       target = construct_uri(url)
       if params
         target.query = urlencode(params)
@@ -122,7 +145,7 @@ module TempoDB
     end
 
     def construct_uri(url)
-      protocol = @secure ? "https" : "http"
+      protocol = @secure ? 'https' : 'http'
       URI::Generic.new(protocol, nil, @host, @port, nil, "/#{url}/", nil, nil, nil)
     end
 
@@ -152,47 +175,22 @@ module TempoDB
     def rollup_params(params)
       map_params(params,
                  :rollup_function => 'rollup.fold',
+                 :rollup_functions => 'rollup.fold',
                  :rollup_period => 'rollup.period',
                  :interpolation_function => 'interpolation.function',
                  :interpolation_period => 'interpolation.period')
     end
 
-    def _read(series_type, series_val, start, stop, options={})
-      defaults = {
-        :interval => "",
-        :function => "",
-        :tz => ""
-      }
-      options = defaults.merge(options)
-
-      params = {}
-      params[:start] = start.iso8601(3)
-      params[:end] = stop.iso8601(3)
-      params[:interval] = options[:interval] if options[:interval]
-      params[:function] = options[:function] if options[:function]
-      params[:tz] = options[:tz] if options [:tz]
-
-      url = ["series", series_type, series_val, "data"]
-      json = do_get(url, params)
-      DataSet.from_json(json)
+    def find_params(params)
+      map_params(params,
+                 :predicate_function => 'predicate.function',
+                 :predicate_period => 'predicate.period')
     end
 
-    def _delete(series_type, series_val, start, stop, options={})
-      defaults = {}
-      options = defaults.merge(options)
-
-      params = {}
-      params[:start] = start.iso8601(3)
-      params[:end] = stop.iso8601(3)
-
-      url = ["series", series_type, series_val, "data"]
-      do_delete(url, params)
-    end
-
-    def write(series_type, series_val, data)
-      url = ["series", series_type, series_val, "data"]
-      body = data.collect {|dp| dp.to_json()}
-      do_post(url, nil, body)
+    def single_value_params(params)
+      map_params(params,
+                 :ts => 'ts',
+                 :direction => 'direction')
     end
 
     def increment(series_type, series_val, data)
@@ -297,25 +295,13 @@ module TempoDB
       do_http_with_body(uri, Net::HTTP::Put.new(uri.request_uri, headers), body)
     end
 
-    def do_multi(url_parts, datapoints)
-      converted = datapoints.map do |dp|
-        dp_copy = dp.clone
-        if dp_copy.has_key?(:t)
-          ts = dp_copy[:t].iso8601(3)
-          dp_copy[:t] = ts
-        end
-        dp_copy
-      end
-      do_post(url_parts, nil, JSON.generate(converted))
-    end
-
     def urlencode(params)
       p = []
       params.each do |key, value|
         if value.is_a? Array
-          value.each {|v| p.push(URI.escape(key.to_s) + "=" + URI.escape(v))}
+          value.each { |v| p.push(URI.escape(key.to_s) + "=" + URI.escape(v)) }
         elsif value.is_a? Hash
-          value.each {|k, v| p.push("#{URI.escape(key.to_s)}[#{URI.escape(k.to_s)}]=#{URI.escape(v)}")}
+          value.each { |k, v| p.push("#{URI.escape(key.to_s)}[#{URI.escape(k.to_s)}]=#{URI.escape(v)}") }
         else
           p.push(URI.escape(key.to_s) + "=" + URI.escape(value.to_s))
         end
@@ -327,14 +313,10 @@ module TempoDB
       if response.ok?
         body = response.body
 
-        begin
-          if body == ""
-            return {}
-          else
-            return JSON.parse(body)
-          end
-        rescue JSON::ParserError
-          return body
+        if body == ""
+          return {}
+        else
+          return JSON.parse(body)
         end
       elsif response.status == 207
         raise TempoDBMultiStatusError.new(response.status, JSON.parse(response.body))

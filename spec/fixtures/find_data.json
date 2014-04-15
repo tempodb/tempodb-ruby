@@ -1,0 +1,1 @@
+{"tz": "UTC", "predicate": {"function": "first", "period": "1min"}, "data": [{"found": {"t": "2013-12-18T00:00:00", "v": 1.23}, "interval": {"start": "2013-12-18T00:00:00", "end": "2013-12-18T00:00:00"}}]}

@@ -1,0 +1,1 @@
+{"series":{"id":"577f8162951048d5947e7058e1ceef1e","key":"multi-key-3","name":"","tags":[],"attributes":{}},"data":[{"t":"2013-08-01T04:00:00.000-05:00","v":{"first":3.14,"mean":4.71}}],"rollup":{"period":"PT1H","folds":["first","mean"]},"tz":"EST"}

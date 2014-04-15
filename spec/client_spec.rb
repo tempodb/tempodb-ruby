@@ -5,14 +5,14 @@ describe TempoDB::Client do
     stub_request(:get, "https://api.tempo-db.com/v1/series/?hello=true").
       to_return(:status => 200, :body => "{}", :headers => {})
     client = TempoDB::Client.new("key", "secret")
-    client.get_series(:hello => true)
+    client.list_series(:hello => true)
   end
 
   it "should not throw an exception when using SSL" do
     stub_request(:get, "https://api.tempo-db.com/v1/series/?key=my_key").
       to_return(:status => 200, :body => "{}", :headers => {})
     client = TempoDB::Client.new("key", "secret")
-    client.get_series(:keys => "my_key")
+    client.list_series(:keys => "my_key")
   end
 
   describe "create_series" do
@@ -50,12 +50,134 @@ describe TempoDB::Client do
   end
 
   describe "get_series" do
+    it "fetches the series by key" do
+      key = "012b7a1c5794423996e576792472b00b"
+      stub_request(:get, "https://api.tempo-db.com/v1/series/key/#{key}/").
+        to_return(:status => 200, :body => response_fixture('get_series.json'), :headers => {})
+      client = TempoDB::Client.new("key", "secret")
+      series = client.get_series(key)
+      series.key.should == key
+    end
+  end
+
+  describe "find_data" do
+    it "finds the closest datapoints" do
+      key = "key1"
+      stub_request(:get, "https://api.tempo-db.com/v1/series/key/#{key}/find/?end=2012-01-02T00:00:00.000Z&predicate.function=first&predicate.period=1min&start=2012-01-01T00:00:00.000Z").
+        to_return(:status => 200, :body => response_fixture('find_data.json'), :headers => {})
+      client = TempoDB::Client.new("key", "secret")
+      start = Time.utc(2012, 1, 1)
+      stop = Time.utc(2012, 1, 2)
+      found = client.find_data(key, start, stop, :predicate_function => "first", :predicate_period => "1min").to_a
+      found[0]["found"].value.should == 1.23
+      found[0]["interval"]["start"].should be_a(Time)
+      found[0]["interval"]["end"].should be_a(Time)
+    end
+  end
+
+  describe "aggregate_data" do
+    it "aggregates across multiple series with rollups and interpolation" do
+      stub_request(:get, "https://api.tempo-db.com/v1/segment/?aggregation.fold=max&end=2013-08-01T16:00:00.000-05:00&interpolation.function=linear&interpolation.period=1min&key=multi-key-4&rollup.fold=max&rollup.period=1hour&start=2013-08-01T04:00:00.000-05:00").
+        to_return(:status => 200, :body => response_fixture('aggregate_data.json'), :headers => {})
+      client = TempoDB::Client.new("client", "secret")
+      start = Time.at(1375347600)
+      stop = Time.at(1375390800)
+      
+      agg = client.aggregate_data("max", start, stop,
+                                  :keys => ["multi-key-3", "multi-key-4"],
+                                  :rollup_period => "1hour", :rollup_function => "max",
+                                  :interpolation_period => "1min", :interpolation_function => "linear").to_a
+      agg[0].value.should == 6.28
+    end
+  end
+
+  describe "read_multi" do
+    it "reads data from multiple series at once" do
+       stub_request(:get, "https://api.tempo-db.com/v1/multi/?end=2013-08-01T16:00:00.000-05:00&interpolation.function=linear&interpolation.period=1min&key=multi-key-4&rollup.fold=max&rollup.period=1hour&start=2013-08-01T04:00:00.000-05:00").
+        to_return(:status => 200, :body => response_fixture('read_multi.json'), :headers => {})
+
+      client = TempoDB::Client.new("client", "secret")
+      start = Time.at(1375347600)
+      stop = Time.at(1375390800)
+      
+      multi = client.read_multi(start, stop,
+                                :keys => ["multi-key-3", "multi-key-4"],
+                                :rollup_period => "1hour", :rollup_function => "max",
+                                :interpolation_period => "1min", :interpolation_function => "linear").to_a
+      multi[0].value["multi-key-3"].should == 6.28
+      multi[0].value["multi-key-4"].should == 2.34
+    end
+  end
+
+  describe "get_summary" do
+    it "retrieves the series summary for the designated key at the start and stop" do
+      stub_request(:get, "https://api.tempo-db.com/v1/series/key/multi-key-3/summary/?end=2013-08-01T16:00:00.000-05:00&start=2013-08-01T04:00:00.000-05:00&tz=CST").
+        to_return(:status => 200, :body => response_fixture('get_summary.json'))
+      client = TempoDB::Client.new("key", "secret")
+      start = Time.at(1375347600)
+      stop = Time.at(1375390800)
+
+      summary = client.get_summary("multi-key-3", start, stop, :tz => "CST")
+      summary.summary['count'].should == 2
+      summary.summary['mean'].should == 4.71
+      summary.summary['max'].should == 6.28
+      summary.summary['stddev'].floor.should == 2
+      summary.series['key'].should == 'multi-key-3'
+    end
+  end
+
+  describe "read_multi_rollups" do
+    it "calculates multiple rollups for a single series" do
+      stub_request(:get, "https://api.tempo-db.com/v1/series/key/multi-key-3/data/rollups/segment/?end=2013-08-01T16:00:00.000-05:00&interpolation.function=linear&interpolation.period=1min&limit=50&rollup.fold=avg&rollup.period=1hour&start=2013-08-01T04:00:00.000-05:00&tz=EST").
+        to_return(:status => 200, :body => response_fixture('read_multi_rollups.json'))
+
+      client = TempoDB::Client.new("key", "secret")
+      start = Time.at(1375347600)
+      stop = Time.at(1375390800)
+      
+      rollups = client.read_multi_rollups("multi-key-3", start, stop,
+                                          :rollup_functions => ["first", "avg"], :rollup_period => "1hour",
+                                          :interpolation_function => "linear", :interpolation_period => "1min",
+                                          :tz => "EST",
+                                          :limit => 50).to_a
+
+      rollups[0].value["first"].should == 3.14
+      rollups[0].value["mean"].should == 4.71
+    end
+  end
+
+  describe "single_value" do
+    it "returns one datapoint with the given search criteria" do
+      stub_request(:get, "https://api.tempo-db.com/v1/series/key/multi-key-3/single/?direction=nearest&ts=2013-08-01T04:00:00.000-05:00").
+        to_return(:status => 200, :body => response_fixture('single_value.json'))
+      client = TempoDB::Client.new("key", "secret")
+      ts = Time.at(1375347600)
+      value = client.single_value("multi-key-3", :direction => "nearest", :ts => ts)
+      value.data.value.should == 3.14
+    end
+  end
+
+  describe "multi_series_single_value" do
+    it "returns a single value for multiple series given a certain search criteria" do
+      stub_request(:get, "https://api.tempo-db.com/v1/single/?direction=nearest&key=multi-key-4&ts=2013-08-01T04:00:00.000-05:00").
+        to_return(:status => 200, :body => response_fixture('multi_series_single_value.json'))
+      client = TempoDB::Client.new("key", "secret")
+      ts = Time.at(1375347600)
+      values = client.multi_series_single_value(:keys => ["multi-key-3", "multi-key-4"],
+                                                :direction => "nearest",
+                                                :ts => ts).to_a
+      values[0].series.key.should == "multi-key-3"
+      values[0].data.value.should == 3.14
+    end
+  end
+
+  describe "list_series" do
     context "with no options provided" do
       it "lists all series in the database" do
         stub_request(:get, "https://api.tempo-db.com/v1/series/?").
           to_return(:status => 200, :body => response_fixture('list_all_series.json'), :headers => {})
         client = TempoDB::Client.new("key", "secret")
-        client.get_series.size.should == 7
+        client.list_series.to_a.size.should == 7
       end
     end
 
@@ -64,7 +186,7 @@ describe TempoDB::Client do
         stub_request(:get, "https://api.tempo-db.com/v1/series/?key=key1&key=key2").
           to_return(:status => 200, :body => response_fixture('list_filtered_series.json'), :headers => {})
         client = TempoDB::Client.new("key", "secret")
-        series = client.get_series(:keys => ["key1", "key2"])
+        series = client.list_series(:keys => ["key1", "key2"]).to_a
         series.map(&:key).should == ["key1", "key2"]
       end
     end
@@ -80,65 +202,38 @@ describe TempoDB::Client do
     end
   end
 
-  describe "read_key" do
+  describe "read_data" do
     it "has an array of DataPoints" do
       start = Time.parse("2012-01-01 00:00 UTC")
       stop = Time.parse("2012-01-02 00:00 UTC")
-      stub_request(:get, "https://api.tempo-db.com/v1/series/key/key1/data/?end=2012-01-02T00:00:00.000Z&function=&interval=&start=2012-01-01T00:00:00.000Z&tz=").
+      series_key = "key1"
+      stub_request(:get, "https://api.tempo-db.com/v1/series/key/#{series_key}/segment/?end=2012-01-02T00:00:00.000Z&start=2012-01-01T00:00:00.000Z").
         to_return(:status => 200, :body => response_fixture('read_id_and_key.json'), :headers => {})
       client = TempoDB::Client.new("key", "secret")
-      set = client.read_key("key1", start, stop)
-      set.data.all? { |d| d.is_a?(TempoDB::DataPoint) }.should be_true
-      set.data.size.should == 1440
+      set = client.read_data(series_key, start, stop).to_a
+      set.size.should == 1440
     end
 
     it "handles special characters" do
       start = Time.parse("2012-01-01 00:00 UTC")
       stop = Time.parse("2012-01-02 00:00 UTC")
-      stub_request(:get, "https://api.tempo-db.com/v1/series/key/a%20b%5Ed&e%3Ff%2Fg/data/?end=2012-01-02T00:00:00.000Z&function=&interval=&start=2012-01-01T00:00:00.000Z&tz=").
+      stub_request(:get, "https://api.tempo-db.com/v1/series/key/a%20b%5Ed&e%3Ff%2Fg/segment/?end=2012-01-02T00:00:00.000Z&start=2012-01-01T00:00:00.000Z").
         to_return(:status => 200, :body => response_fixture('read_id_and_key.json'), :headers => {})
       client = TempoDB::Client.new("key", "secret")
-      set = client.read_key("a b^d&e?f/g", start, stop)
-      set.data.all? { |d| d.is_a?(TempoDB::DataPoint) }.should be_true
-      set.data.size.should == 1440
+      set = client.read_data("a b^d&e?f/g", start, stop).to_a
+      set.all? { |d| d.is_a?(TempoDB::DataPoint) }.should be_true
+      set.size.should == 1440
     end
 
     context "with a series that does not exist" do
       it "throws a TempoDBClientError exception" do
         start = Time.parse("2012-01-01 00:00 UTC")
         stop = Time.parse("2012-01-02 00:00 UTC")
-        stub_request(:get, "https://api.tempo-db.com/v1/series/key/non-existent/data/?end=2012-01-02T00:00:00.000Z&function=&interval=&start=2012-01-01T00:00:00.000Z&tz=").
+        stub_request(:get, "https://api.tempo-db.com/v1/series/key/non-existent/segment/?end=2012-01-02T00:00:00.000Z&start=2012-01-01T00:00:00.000Z").
           to_return(:status => 403, :body => "", :headers => {})
         client = TempoDB::Client.new("key", "secret")
-        lambda { client.read_key("non-existent", start, stop) }.should raise_error(TempoDB::TempoDBClientError)
+        lambda { client.read_data("non-existent", start, stop).take(1) }.should raise_error(TempoDB::TempoDBClientError)
       end
-    end
-  end
-
-  describe "read_id" do
-    it "has an array of DataPoints" do
-      start = Time.parse("2012-01-01 00:00 UTC")
-      stop = Time.parse("2012-01-02 00:00 UTC")
-      stub_request(:get, "https://api.tempo-db.com/v1/series/id/3c9b4f3a19114a7eb670ff7c4917f315/data/?end=2012-01-02T00:00:00.000Z&function=&interval=&start=2012-01-01T00:00:00.000Z&tz=").
-        to_return(:status => 200, :body => response_fixture('read_id_and_key.json'), :headers => {})
-      client = TempoDB::Client.new("key", "secret")
-      set = client.read_id("3c9b4f3a19114a7eb670ff7c4917f315", start, stop)
-      set.data.all? { |d| d.is_a?(TempoDB::DataPoint) }.should be_true
-      set.data.size.should == 1440
-    end
-  end
-
-  describe "write_id" do
-    it "adds data points to the specific series id" do
-      stub_request(:post, "https://api.tempo-db.com/v1/series/id/0e3178aea7964c4cb1a15db1e80e2a7f/data/").
-        to_return(:status => 200, :body => "", :headers => {})
-      points = [
-              TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 0, 0), 12.34),
-              TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 1, 0), 1.874),
-              TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 2, 0), 21.52)
-             ]
-      client = TempoDB::Client.new("key", "secret")
-      client.write_id("0e3178aea7964c4cb1a15db1e80e2a7f", points).should == {}
     end
   end
 
@@ -152,7 +247,7 @@ describe TempoDB::Client do
               TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 2, 0), 21.52)
              ]
       client = TempoDB::Client.new("key", "secret")
-      client.write_key("key3", points).should == {}
+      client.write_data("key3", points).should == {}
     end
 
     it "handles special characters" do
@@ -164,35 +259,7 @@ describe TempoDB::Client do
               TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 2, 0), 21.52)
              ]
       client = TempoDB::Client.new("key", "secret")
-      client.write_key("a b^d&e?f", points).should == {}
-    end
-  end
-
-  describe "write_bulk" do
-    it "writes multiple values to multiple series at the same timestamp" do
-      stub_request(:post, "https://api.tempo-db.com/v1/data/").
-        to_return(:status => 200, :body => "", :headers => {})
-      client = TempoDB::Client.new("key", "secret")
-      ts = Time.utc(2012, 1, 8, 1, 21)
-      data = [
-              { :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4.164 },
-              { :key => 'key3', :v => 324.991 }
-             ]
-      client.write_bulk(ts, data).should == {}
-    end
-
-    context "with some series that exist and others that don't" do
-      it "creates the non-existent series and writes to all series" do
-        stub_request(:post, "https://api.tempo-db.com/v1/data/").
-          to_return(:status => 200, :body => "", :headers => {})
-        client = TempoDB::Client.new("key", "secret")
-        ts = Time.utc(2012, 1, 8, 1, 21)
-        data = [
-                { :id => 'non-existent', :v => 4.164 },
-                { :key => 'key3', :v => 324.991 }
-               ]
-        client.write_bulk(ts, data).should == {}
-      end
+      client.write_data("a b^d&e?f", points).should == {}
     end
   end
 
@@ -202,107 +269,50 @@ describe TempoDB::Client do
         to_return(:status => 200, :body => "", :headers => {}).
         with { |request| request.body =~ /"t":"2013-09-12T01:00:00.000Z"/ }
       client = TempoDB::Client.new("key", "secret")
-      data = [
-              { :t => Time.utc(2013, 9, 12, 1, 0), :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4.164 },
-              { :t => Time.utc(2013, 9, 13, 1, 0), :key => 'key3', :v => 324.991 }
-             ]
-      client.write_multi(data).should == {}
+
+      client.write_multi do |multi|
+        multi.add('0e3178aea7964c4cb1a15db1e80e2a7f', [TempoDB::DataPoint.new(Time.utc(2013, 9, 12, 1, 0), 4.164)])
+        multi.add('key3', [TempoDB::DataPoint.new(Time.utc(2013, 9, 13, 1, 0), 324.991)])
+      end
     end
 
     it "should return 207 on partial failure" do
       stub_request(:post, "https://api.tempo-db.com/v1/multi/").
         to_return(:status => 207, :body => response_fixture("multi_status_response.json"), :headers => {})
       client = TempoDB::Client.new("key", "secret")
-      data = [
-              { :t => Time.now, :v => 123.4 },
-              { :t => Time.utc(2013, 9, 13, 1, 0), :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4.164 },
-              {}
-             ]
-      lambda { client.write_multi(data) }.should raise_error(TempoDB::TempoDBMultiStatusError)
+      lambda {
+        client.write_multi do |multi|
+          multi.add('0e3178aea7964c4cb1a15db1e80e2a7f', [TempoDB::DataPoint.new(Time.utc(2013, 9, 13, 1, 0), 4.164)])
+          multi.add('', [])
+        end
+      }.should raise_error(TempoDB::TempoDBMultiStatusError)
+    end
+
+    it "accepts the write request as a write_multi argument" do
+      stub_request(:post, "https://api.tempo-db.com/v1/multi/").
+        to_return(:status => 200, :body => "", :headers => {}).
+        with { |request| request.body =~ /"t":"2013-09-12T01:00:00.000Z"/ }
+      client = TempoDB::Client.new("key", "secret")
+
+      multi = TempoDB::MultiWrite.new
+      multi.add('0e3178aea7964c4cb1a15db1e80e2a7f', [TempoDB::DataPoint.new(Time.utc(2013, 9, 12, 1, 0), 4.164)])
+      multi.add('key3', [TempoDB::DataPoint.new(Time.utc(2013, 9, 13, 1, 0), 324.991)])
+      client.write_multi(multi)
+    end
+
+    it "throws a TempoDBClientError if no block and no request is given" do
+      client = TempoDB::Client.new("key", "secret")
+      lambda { client.write_multi }.should raise_error(TempoDB::TempoDBClientError)
     end
   end
 
-  describe "increment_id" do
-    it "adds the value to the datapoint value for the given series id" do
-      stub_request(:post, "https://api.tempo-db.com/v1/series/id/0e3178aea7964c4cb1a15db1e80e2a7f/increment/").
-        to_return(:status => 200, :body => "", :headers => {})
-      client = TempoDB::Client.new("key", "secret")
-      points = [
-                TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 0, 0), 1),
-                TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 1, 0), 2),
-                TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 2, 0), 1)
-               ]
-      client.increment_id("0e3178aea7964c4cb1a15db1e80e2a7f", points).should == {}
-    end
-  end
-
-  describe "increment_key" do
-    it "adds the value to the datapoint value for the given series key" do
-      stub_request(:post, "https://api.tempo-db.com/v1/series/key/key3/increment/").
-        to_return(:status => 200, :body => "", :headers => {})
-      client = TempoDB::Client.new("key", "secret")
-      points = [
-                TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 0, 0), 1),
-                TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 1, 0), 2),
-                TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 2, 0), 1)
-               ]
-      client.increment_key("key3", points).should == {}
-    end
-  end
-
-  describe "increment_bulk" do
-    it "increments multiple series at the same timestamp with multiple values" do
-      stub_request(:post, "https://api.tempo-db.com/v1/increment/").
-       to_return(:status => 200, :body => "", :headers => {})
-      client = TempoDB::Client.new("key", "secret")
-      ts = Time.utc(2012, 1, 8, 1, 21)
-      data = [
-              { :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4.164 },
-              { :key => 'key3', :v => 324.991 }
-             ]
-      client.increment_bulk(ts, data).should == {}
-    end
-  end
-
-  describe "increment_multi" do
-    it "increments multiple values to multiple series for different timestamps" do
-      stub_request(:post, "https://api.tempo-db.com/v1/multi/increment/").
-        to_return(:status => 200, :body => "", :headers => {})
-      client = TempoDB::Client.new("key", "secret")
-      data = [
-              { :t => Time.utc(2013, 9, 12, 1, 0), :id => '0e3178aea7964c4cb1a15db1e80e2a7f', :v => 4 },
-              { :t => Time.now, :key => 'key3', :v => 32 }
-             ]
-      client.increment_multi(data).should == {}
-    end
-  end
-
-  describe "delete_id" do
-    it "deletes a single point when the start and stop are the same time" do
-      stub_request(:delete, "https://api.tempo-db.com/v1/series/id/38268c3b231f1266a392931e15e99231/data/?end=2012-01-01T00:00:00.000Z&start=2012-01-01T00:00:00.000Z").
-        to_return(:status => 200, :body => "", :headers => {})
-      client = TempoDB::Client.new("key", "secret")
-      time = Time.utc(2012, 1, 1)
-      client.delete_id("38268c3b231f1266a392931e15e99231", time, time).should == {}
-    end
-
-    it "deletes a range of points between the start and stop" do
-      stub_request(:delete, "https://api.tempo-db.com/v1/series/id/38268c3b231f1266a392931e15e99231/data/?end=2012-01-02T00:00:00.000Z&start=2012-01-01T00:00:00.000Z").
-        to_return(:status => 200, :body => "", :headers => {})
-      client = TempoDB::Client.new("key", "secret")
-      start = Time.utc(2012, 1, 1)
-      stop = Time.utc(2012, 1, 2)
-      client.delete_id("38268c3b231f1266a392931e15e99231", start, stop).should == {}
-    end
-  end
-
-  describe "delete_key" do
+  describe "delete_data" do
     it "deletes a single point when the start and stop are the same time" do
       stub_request(:delete, "https://api.tempo-db.com/v1/series/key/key3/data/?end=2012-01-01T00:00:00.000Z&start=2012-01-01T00:00:00.000Z").
         to_return(:status => 200, :body => "", :headers => {})
       client = TempoDB::Client.new("key", "secret")
       time = Time.utc(2012, 1, 1)
-      client.delete_key("key3", time, time).should == {}
+      client.delete_data("key3", time, time).should == {}
     end
 
     it "deletes a range of points between the start and stop" do
@@ -311,7 +321,7 @@ describe TempoDB::Client do
       client = TempoDB::Client.new("key", "secret")
       start = Time.utc(2012, 1, 1)
       stop = Time.utc(2012, 1, 2)
-      client.delete_key("key3", start, stop).should == {}
+      client.delete_data("key3", start, stop).should == {}
     end
   end
 end
