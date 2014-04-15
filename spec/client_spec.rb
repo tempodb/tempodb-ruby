@@ -103,9 +103,11 @@ describe TempoDB::Client do
       multi = client.read_multi(start, stop,
                                 :keys => ["multi-key-3", "multi-key-4"],
                                 :rollup_period => "1hour", :rollup_function => "max",
-                                :interpolation_period => "1min", :interpolation_function => "linear").to_a
-      multi[0].value["multi-key-3"].should == 6.28
-      multi[0].value["multi-key-4"].should == 2.34
+                                :interpolation_period => "1min", :interpolation_function => "linear")
+      multi["series"][0]["key"].should == "multi-key-3"
+      elements = multi.to_a
+      elements[0].value["multi-key-3"].should == 6.28
+      elements[0].value["multi-key-4"].should == 2.34
     end
   end
 

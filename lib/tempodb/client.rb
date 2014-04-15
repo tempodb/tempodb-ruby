@@ -43,7 +43,7 @@ module TempoDB
       params['tz'] = options[:tz] if options [:tz]
 
       url = ['series', 'key', series_key, 'segment']
-      Cursor.new(build_uri(url, params), self, DataCursor, DataSet)
+      Cursor.new(build_uri(url, params), self, DataCursor, DataSet, 'start', 'end', 'rollup', 'series')
     end
 
     def get_summary(series_key, start, stop, options = {})
@@ -60,7 +60,7 @@ module TempoDB
       params['start'] = start.iso8601(3)
       params['end'] = stop.iso8601(3)
       url = ['series', 'key', series_key, 'data', 'rollups', 'segment']
-      Cursor.new(build_uri(url, params), self, DataCursor, MultiPointSegment)
+      Cursor.new(build_uri(url, params), self, DataCursor, MultiPointSegment, 'series')
     end
 
     def find_data(series_key, start, stop, options = {})
@@ -68,7 +68,7 @@ module TempoDB
       params['start'] = start.iso8601(3)
       params['end'] = stop.iso8601(3)
       url = ['series', 'key', series_key, 'find']
-      Cursor.new(build_uri(url, params), self, DataCursor, DataPointFound)
+      Cursor.new(build_uri(url, params), self, DataCursor, DataPointFound, 'find', 'predicate')
     end
 
     def aggregate_data(aggregation, start, stop, options = {})
@@ -85,7 +85,7 @@ module TempoDB
       params['start'] = start.iso8601(3)
       params['end'] = stop.iso8601(3)
       url = ["multi"]
-      Cursor.new(build_uri(url, params), self, DataCursor, MultiPointSegment)
+      Cursor.new(build_uri(url, params), self, DataCursor, MultiPointSegment, 'series')
     end
 
     def write_data(series_key, data)
