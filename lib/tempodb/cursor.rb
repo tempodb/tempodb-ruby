@@ -74,8 +74,8 @@ module TempoDB
   end
 
   class ArrayCursor
-    def self.extract(series)
-      series
+    def self.extract(elems)
+      elems
     end
   end
 end

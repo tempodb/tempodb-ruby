@@ -132,6 +132,13 @@ module TempoDB
       do_http(uri, Net::HTTP::Get.new(uri.request_uri, headers))
     end
 
+    def construct_uri(url)
+      protocol = @secure ? 'https' : 'http'
+      URI::Generic.new(protocol, nil, @host, @port, nil, "/#{url}/", nil, nil, nil)
+    end
+
+    private
+
     def build_uri(url_parts, params=nil)
       versioned_url_parts = [TempoDB::API_VERSION] + url_parts
       url = versioned_url_parts.map do |part|
@@ -143,13 +150,6 @@ module TempoDB
       end
       URI.parse(target.to_s)
     end
-
-    def construct_uri(url)
-      protocol = @secure ? 'https' : 'http'
-      URI::Generic.new(protocol, nil, @host, @port, nil, "/#{url}/", nil, nil, nil)
-    end
-
-    private
 
     # Takes an input params hash, applies the mapping hash to transform key names and pass
     # through all other unrecognized hash key entries
@@ -191,12 +191,6 @@ module TempoDB
       map_params(params,
                  :ts => 'ts',
                  :direction => 'direction')
-    end
-
-    def increment(series_type, series_val, data)
-      url = ["series", series_type, series_val, "increment"]
-      body = data.collect {|dp| dp.to_json()}
-      do_post(url, nil, body)
     end
 
     def do_http(uri, request) # :nodoc:
