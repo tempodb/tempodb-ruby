@@ -5,6 +5,7 @@ require 'json'
 require 'time'
 require 'uri'
 
+require 'tempodb/session'
 require 'tempodb/client'
 require 'tempodb/cursor'
 require 'tempodb/version'

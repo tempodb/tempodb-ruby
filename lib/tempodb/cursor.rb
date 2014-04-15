@@ -3,14 +3,16 @@ require 'httpclient_link_header'
 
 module TempoDB
   class Cursor
+    attr_reader :session
+
     include Enumerable
 
     TRUNCATED_KEY = "Truncated"
 
-    def initialize(uri, client, inner_cursor_type, wrapper, *extra_attributes)
+    def initialize(uri, session, inner_cursor_type, wrapper, *extra_attributes)
       @uri = uri
       @next_uri = uri
-      @client = client
+      @session = session
       @wrapper = wrapper
       @inner_cursor_type = inner_cursor_type
       @extra_attributes = extra_attributes
@@ -45,14 +47,14 @@ module TempoDB
 
     def get_segment!
       if @segment == nil || @segment.empty?
-        response = @client.cursored_get(@next_uri)
+        response = session.cursored_get(@next_uri)
         check_response(response)
         json = JSON.parse(response.body)
         wrapped = json.is_a?(Array) ? json.map { |obj| @wrapper.from_json(obj) } : @wrapper.from_json(json)
         @extra_attributes.each { |attr| @attributes[attr] = json[attr] }
         @segment = @inner_cursor_type.extract(wrapped).reverse
         if !response.header[TRUNCATED_KEY].empty?
-          @next_uri = URI(@client.construct_uri(response.links.by("rel").fetch("next").first["uri"]).to_s.chomp("/"))
+          @next_uri = URI(session.construct_uri(response.links.by("rel").fetch("next").first["uri"]).to_s.chomp("/"))
         else
           # We're at the last page
           @next_uri = nil
