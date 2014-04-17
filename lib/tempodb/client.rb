@@ -1,3 +1,20 @@
+require 'time'
+require 'json'
+
+require 'tempodb/cursor'
+require 'tempodb/data_point'
+require 'tempodb/data_point_found'
+require 'tempodb/data_set'
+require 'tempodb/delete_summary'
+require 'tempodb/multipoint'
+require 'tempodb/multipoint_segment'
+require 'tempodb/multi_write'
+require 'tempodb/series'
+require 'tempodb/series_summary'
+require 'tempodb/session'
+require 'tempodb/single_value'
+require 'tempodb/version'
+
 module TempoDB
   class Client
     attr_reader :session

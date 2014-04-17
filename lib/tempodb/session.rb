@@ -1,3 +1,8 @@
+require 'httpclient'
+require 'net/https'
+require 'uri'
+
+
 module TempoDB
   class Session
     def initialize(key, secret, host, port, secure)
