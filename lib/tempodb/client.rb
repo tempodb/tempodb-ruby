@@ -24,9 +24,9 @@ module TempoDB
       @session = Session.new(key, secret, host, port, secure)
     end
 
-    def create_series(series_key = nil)
-      params = {}
-      params['key'] = series_key if series_key
+    def create_series(series_key = nil, options = {})
+      params = options
+      params = params.merge('key' => series_key) if series_key
       json = session.do_post(['series'], nil, params)
       Series.from_json(json)
     end
@@ -106,7 +106,7 @@ module TempoDB
 
     def write_data(series_key, data)
       url = ['series', 'key', series_key, 'data']
-      body = data.collect {|dp| dp.to_json()}
+      body = data.collect { |dp| dp.to_json }
       session.do_post(url, nil, body)
     end
 

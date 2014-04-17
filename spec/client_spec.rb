@@ -21,7 +21,7 @@ describe TempoDB::Client do
         to_return(:status => 200, :body => response_fixture('create_series.json'), :headers => {})
       keyname = "key2"
       client = TempoDB::Client.new("database_id", "key", "secret")
-      series = client.create_series(keyname)
+      series = client.create_series(keyname, :tags => ["temp"], :attributes => {"building-number" => "3"})
       series.key.should == keyname
     end
 
