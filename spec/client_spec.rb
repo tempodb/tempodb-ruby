@@ -83,7 +83,7 @@ describe TempoDB::Client do
       start = Time.at(1375347600)
       stop = Time.at(1375390800)
       
-      agg = client.aggregate_data("max", start, stop,
+      agg = client.aggregate_data(start, stop, "max",
                                   :keys => ["multi-key-3", "multi-key-4"],
                                   :rollup_period => "1hour", :rollup_function => "max",
                                   :interpolation_period => "1min", :interpolation_function => "linear").to_a

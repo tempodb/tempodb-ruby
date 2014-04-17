@@ -53,12 +53,12 @@ module TempoDB
       do_http_with_body(uri, Net::HTTP::Put.new(uri.request_uri, headers), body)
     end
 
-    private
-
     def construct_uri(url)
       protocol = @secure ? 'https' : 'http'
       URI::Generic.new(protocol, nil, @host, @port, nil, "/#{url}/", nil, nil, nil)
     end
+
+    private
 
     def do_http(uri, request) # :nodoc:
       if @http_client.nil?
