@@ -19,7 +19,8 @@ module TempoDB
   class Client
     attr_reader :session
 
-    def initialize(key, secret, host = TempoDB::API_HOST, port = TempoDB::API_PORT, secure = true)
+    def initialize(database_id, key, secret, host = TempoDB::API_HOST, port = TempoDB::API_PORT, secure = true)
+      @database_id = database_id
       @session = Session.new(key, secret, host, port, secure)
     end
 
