@@ -2,6 +2,32 @@ require 'enumerator'
 require 'httpclient_link_header'
 
 module TempoDB
+  # A Cursor represents the fundamental way in which large streams of data are
+  # read from the TempoDB API. Most read calls that return large collections of
+  # objects will return a Cursor. A Cursor represents one logical read of a query,
+  # but might generate multiple HTTP calls lazily upon iteration. You can think of
+  # a cursor as handling the 'pagination' problem, without having to explicitly think
+  # about pages in your application.
+  #
+  # ==== Usage
+  #
+  # A Cursor implements the Ruby Enumerable interface, and can thus be iterated over just
+  # like you might iterate over any other collection type:
+  #
+  #    cursor = client.read_data('temp-1', start, stop)
+  #    cursor.each do |datapoint|
+  #      puts "#{datapoint.ts}: #{datapoint.value}"
+  #    end
+  #
+  # If you know you are working with large datasets, lazy iteration will give you
+  # the best memory performance. On the other hand, if you are working with small
+  # collections, it might be convenient to work with arrays directly:
+  #
+  #    datapoints = client.read_data('temp-1', start, stop).to_a
+  #    puts "Total datapoints returned: #{datapoints.size}"
+  #
+  # Remember that a Cursor may make many roundtrips to the server, depending on
+  # how much data you request in your query.
   class Cursor
     attr_reader :session
 
@@ -69,12 +95,14 @@ module TempoDB
     end
   end
 
+  # Cursor through responses that return an array in the +data+ field.
   class DataCursor
     def self.extract(data_set)
       data_set.data
     end
   end
 
+  # Cursor through responses that return a top-level Array
   class ArrayCursor
     def self.extract(elems)
       elems

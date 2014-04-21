@@ -1,4 +1,9 @@
 module TempoDB
+  # The fundamental unit of TempoDB. A compound type that holds both:
+  #
+  # * +ts+ [Time] - A timestamp
+  # * +value+ [Integer/Float] - A numeric value
+  #
   class DataPoint
     attr_reader :ts, :value
 

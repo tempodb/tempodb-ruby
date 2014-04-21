@@ -1,4 +1,5 @@
 module TempoDB
+  # A page of DataPoints, with additional metadata
   class DataSet
     attr_accessor :series, :data, :rollup, :tz
 

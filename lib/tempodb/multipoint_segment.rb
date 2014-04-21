@@ -1,4 +1,5 @@
 module TempoDB
+  # A logical page of MultiPoint with additional metadata
   class MultiPointSegment
     attr_accessor :data, :rollup, :tz
 

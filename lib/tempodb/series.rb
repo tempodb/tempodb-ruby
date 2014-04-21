@@ -1,4 +1,5 @@
 module TempoDB
+  # Represents one logical stream of time series data
   class Series
     attr_accessor :id, :key, :name, :attributes, :tags
 

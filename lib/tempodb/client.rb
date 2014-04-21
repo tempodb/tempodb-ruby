@@ -269,10 +269,10 @@ module TempoDB
     # * +:interpolation_function+ [String] - The type of interpolation to perform. One of:
     #   * linear - Perform linear interpolation
     #   * zoh - Zero order hold interpolation
-    # * +:interpolation_period [String] - The sampling rate to interpolate datapoints. Should always be smaller than :rollup_period. Specified by:
+    # * +:interpolation_period+ [String] - The sampling rate to interpolate datapoints. Should always be smaller than :rollup_period. Specified by:
     #   * A number and unit of time: EG - '1min' '10days'.
     #   * A valid ISO8601 duration
-    # * +:tz [String] - The timezone that datapoint timestamps will be read in
+    # * +:tz+ [String] - The timezone that datapoint timestamps will be read in
     #
     # ==== Example
     #
@@ -382,10 +382,10 @@ module TempoDB
     # * +:interpolation_function+ [String] - The type of interpolation to perform. One of:
     #   * linear - Perform linear interpolation
     #   * zoh - Zero order hold interpolation
-    # * +:interpolation_period [String] - The sampling rate to interpolate datapoints. Should always be smaller than :rollup_period. Specified by:
+    # * +:interpolation_period+ [String] - The sampling rate to interpolate datapoints. Should always be smaller than :rollup_period. Specified by:
     #   * A number and unit of time: EG - '1min' '10days'.
     #   * A valid ISO8601 duration
-    # * +:tz [String] - The timezone that datapoint timestamps will be read in
+    # * +:tz+ [String] - The timezone that datapoint timestamps will be read in
     #
     # ==== Example
     #
@@ -436,10 +436,10 @@ module TempoDB
     # * +:interpolation_function+ [String] - The type of interpolation to perform. One of:
     #   * linear - Perform linear interpolation
     #   * zoh - Zero order hold interpolation
-    # * +:interpolation_period [String] - The sampling rate to interpolate datapoints. Should always be smaller than :rollup_period. Specified by:
+    # * +:interpolation_period+ [String] - The sampling rate to interpolate datapoints. Should always be smaller than :rollup_period. Specified by:
     #   * A number and unit of time: EG - '1min' '10days'.
     #   * A valid ISO8601 duration
-    # * +:tz [String] - The timezone that datapoint timestamps will be read in
+    # * +:tz+ [String] - The timezone that datapoint timestamps will be read in
     #
     # ==== Example
     #
@@ -481,7 +481,7 @@ module TempoDB
     # Write datapoints to multiple series at once
     #
     # * +multi+ [MultiWrite] - optional multiwrite object. Must be provided if no block is given.
-    # * +&block+ [MultiWrite] - if no +multi+ is provided, you must provide a block that adds datapoints to the yielded MultiWrite.
+    # * +block+ [MultiWrite] - if no +multi+ is provided, you must provide a block that adds datapoints to the yielded MultiWrite.
     #
     # return true on success, raises TempoDBClientError on failure
     #
@@ -505,7 +505,7 @@ module TempoDB
         raise TempoDBClientError.new("You must either pass a multi write object, or provide a block")
       end
 
-      session.do_post(['multi'], nil, JSON.generate(req.series))
+      !!session.do_post(['multi'], nil, JSON.generate(req.series))
     end
 
     # Return a single datapoint for a series
@@ -637,6 +637,13 @@ module TempoDB
     end
   end
 
+  # The primary Exception thrown by the client
+  #
+  # ==== Fields
+  #
+  # * +error+ [String] - The error message
+  # * +http_response+ [HTTP::Message] - The HTTP response
+  # * +user_error+ [String] - Any additional errors
   class TempoDBClientError < RuntimeError
     attr_accessor :http_response, :error, :user_error
     def initialize(error, http_response=nil, user_error=nil)
@@ -651,6 +658,12 @@ module TempoDB
     end
   end
 
+  # Used to deconstruct a 207 response in which some actions
+  # might have succeeded and others might have failed
+  # ==== Fields
+  #
+  # * +http_response+ [HTTP::Message] - The HTTP response
+  # * +multi_status_response+ [Hash] - The hash of errors
   class TempoDBMultiStatusError < RuntimeError
     attr_accessor :http_response, :multi_status_response
     def initialize(http_response, multi_status_response)

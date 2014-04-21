@@ -1,4 +1,5 @@
 module TempoDB
+  # A composite type that represents multiple datapoints at a single timestamp
   class MultiPoint
     attr_accessor :ts, :value
 

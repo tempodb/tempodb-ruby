@@ -1,4 +1,7 @@
 module TempoDB
+  # A search result from calling +find_data+. In addition to the
+  # found DataPoint, contains the interval that the DataPoint was
+  # found in.
   class DataPointFound
     attr_reader :interval, :predicate, :data, :tz
 

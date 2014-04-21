@@ -1,4 +1,5 @@
 module TempoDB
+  # Used to return common aggregate metadata for datapoint reads
   class SeriesSummary
     attr_accessor :summary, :series, :start, :stop, :tz
 

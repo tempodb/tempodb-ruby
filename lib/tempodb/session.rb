@@ -3,6 +3,7 @@ require 'net/https'
 require 'uri'
 
 module TempoDB
+  # Encapsulates all HTTP interactions
   class Session
     def initialize(key, secret, host, port, secure)
       @key = key
@@ -132,7 +133,7 @@ module TempoDB
       elsif response.status == 207
         raise TempoDBMultiStatusError.new(response.status, JSON.parse(response.body))
       else
-        raise TempoDBClientError.new("Error: #{response.status_code} #{response.reason}\n#{response.body}")
+        raise TempoDBClientError.new("Error: #{response.status_code} #{response.reason}\n#{response.body}", response)
       end
     end
   end

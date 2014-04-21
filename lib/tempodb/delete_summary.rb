@@ -1,4 +1,7 @@
 module TempoDB
+  # Returned from 'delete' calls.
+  #
+  # * +deleted+ [Integer] - The number of items deleted
   class DeleteSummary
     attr_reader :deleted
 
