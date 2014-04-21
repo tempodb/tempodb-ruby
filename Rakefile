@@ -7,6 +7,7 @@ task :default => :spec
 
 desc 'Generate API documentation'
 RDoc::Task.new do |rd|
+  rd.rdoc_files.include("README.md", "lib/*.rb", "lib/**/*.rb")
   rd.options << '--inline-source'
   rd.options << '--line-numbers'
 end
