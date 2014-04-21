@@ -167,10 +167,10 @@ module TempoDB
     # * +:interpolation_function+ [String] - The type of interpolation to perform. One of:
     #   * linear - Perform linear interpolation
     #   * zoh - Zero order hold interpolation
-    # * +:interpolation_period [String] - The sampling rate to interpolate datapoints. Should always be smaller than :rollup_period. Specified by:
+    # * +:interpolation_period+ [String] - The sampling rate to interpolate datapoints. Should always be smaller than :rollup_period. Specified by:
     #   * A number and unit of time: EG - '1min' '10days'.
     #   * A valid ISO8601 duration
-    # * +:tz [String] - The timezone that datapoint timestamps will be read in
+    # * +:tz+ [String] - The timezone that datapoint timestamps will be read in
     #
     # ==== Example
     #
@@ -223,13 +223,13 @@ module TempoDB
     # * +:interpolation_function+ [String] - The type of interpolation to perform. One of:
     #   * linear - Perform linear interpolation
     #   * zoh - Zero order hold interpolation
-    # * +:interpolation_period [String] - The sampling rate to interpolate datapoints. Should always be smaller than :rollup_period. Specified by:
+    # * +:interpolation_period+ [String] - The sampling rate to interpolate datapoints. Should always be smaller than :rollup_period. Specified by:
     #   * A number and unit of time: EG - '1min' '10days'.
     #   * A valid ISO8601 duration
-    # * +:tz [String] - The timezone that datapoint timestamps will be read in
+    # * +:tz+ [String] - The timezone that datapoint timestamps will be read in
     #
     # ==== Example
-
+    #
     #    # Retrieve the series summary calculations for 'temp-1' on January 1st, 2012
     #    start = Time.utc(2012, 1, 1)
     #    stop = Time.utc(2012, 1, 2)
@@ -316,7 +316,7 @@ module TempoDB
     # * +:predicate_period+ [String] - The sub intervals within the interval to be searched. Specified by:
     #   * A number and unit of time: EG - '1min' '10days'.
     #   * A valid ISO8601 duration
-    # * +:tz [String] - The timezone that datapoint timestamps will be read in
+    # * +:tz+ [String] - The timezone that datapoint timestamps will be read in
     #
     # ==== Example
     #
