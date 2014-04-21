@@ -249,7 +249,7 @@ describe TempoDB::Client do
               TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 2, 0), 21.52)
              ]
       client = TempoDB::Client.new("database_id", "key", "secret")
-      client.write_data("key3", points).should == {}
+      client.write_data("key3", points).should == true
     end
 
     it "handles special characters" do
@@ -261,7 +261,7 @@ describe TempoDB::Client do
               TempoDB::DataPoint.new(Time.utc(2012, 1, 1, 1, 2, 0), 21.52)
              ]
       client = TempoDB::Client.new("database_id", "key", "secret")
-      client.write_data("a b^d&e?f", points).should == {}
+      client.write_data("a b^d&e?f", points).should == true
     end
   end
 
