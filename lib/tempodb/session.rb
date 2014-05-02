@@ -12,6 +12,7 @@ module TempoDB
       @port = port
       @secure = secure
       @http_client = HTTPClient.new
+      @http_client.transparent_gzip_decompression = true
       if secure
         @http_client.ssl_config.clear_cert_store
         @http_client.ssl_config.set_trust_ca(TempoDB::TRUSTED_CERT_FILE)
@@ -62,15 +63,6 @@ module TempoDB
     private
 
     def do_http(uri, request) # :nodoc:
-      if @http_client.nil?
-        @http_client = HTTPClient.new
-        @http_client.transparent_gzip_decompression = true
-        if @secure
-          @http_client.ssl_config.clear_cert_store
-          @http_client.ssl_config.set_trust_ca(TempoDB::TRUSTED_CERT_FILE)
-        end
-      end
-
       request.basic_auth @key, @secret
       request['User-Agent'] = "tempodb-ruby/#{TempoDB::VERSION}"
       request['Accept-Encoding'] = "gzip"
