@@ -3,7 +3,8 @@
 The TempoDB Ruby API Client makes calls to the [TempoDB API](http://tempo-db.com/api/).  The module is available as a gem.
 
 ``
-gem install tempodb
+gem build tempodb.gemspec
+gem install tempodb-1.0.0.gem
 ``
 
 [![Build Status](https://travis-ci.org/tempodb/tempodb-ruby.png?branch=master)](https://travis-ci.org/tempodb/tempodb-ruby)
